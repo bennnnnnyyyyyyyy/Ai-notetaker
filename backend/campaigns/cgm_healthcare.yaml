@@ -1,0 +1,57 @@
+campaign_id: cgm_healthcare
+name: CGM Patient Acquisition
+version: "1.0"
+
+meeting_types:
+  - discovery
+  - negotiation
+  - onboarding
+
+qualification:
+  requirements:
+    - id: suitable_business
+      description: Business could realistically use Prime Ad's CGM patient-acquisition service
+    - id: relevant_need
+      description: Prospect has a need related to CGM patient generation or order processing
+    - id: authority
+      description: Person on the call is a decision-maker or has clear access to one
+    - id: paid_service_interest
+      description: Prospect is willing to discuss a paid monthly plan
+    - id: supplier_eligibility
+      description: Supplier has or is working toward required PTAN and NPI compliance
+    - id: patient_volume
+      description: Expected patient volume justifies the plan economics (12+ monthly patients)
+
+  disqualifiers:
+    - id: no_supplier_license
+      description: Supplier has no path to PTAN/NPI compliance and no timeline
+    - id: no_budget
+      description: Prospect explicitly states they cannot afford any paid plan
+    - id: wrong_geography
+      description: Prospect operates only in states not covered by Prime Ad's network
+
+services:
+  - name: CGM Patient Acquisition and Order Processing
+    description: >
+      Digital advertising, patient consent, triage, eligibility checks,
+      physician outreach, quality review, and order submission to the supplier.
+    pricing_note: "Starter plan published; confirm current rate with the closer."
+    terminology:
+      - term: CGM
+        definition: Continuous Glucose Monitor
+      - term: PTAN
+        definition: Provider Transaction Access Number — required for Medicare billing
+      - term: NPI
+        definition: National Provider Identifier
+      - term: BAA
+        definition: Business Associate Agreement — required for PHI handling
+      - term: Opt-in
+        definition: Patient consent collected through Prime Ad's digital advertising flow
+
+report:
+  use_universal_scorecard: true
+  require_evidence: true
+  allow_not_assessable: true
+  compliance_flag: >
+    This campaign may involve protected health information.
+    Do not process PHI data until applicable compliance requirements are reviewed.

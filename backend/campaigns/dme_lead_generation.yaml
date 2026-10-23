@@ -1,0 +1,25 @@
+campaign_id: dme_lead_generation
+name: Prime Ad DME Lead Generation
+version: "1.0"
+meeting_types: [discovery, negotiation, onboarding]
+qualification:
+  requirements:
+    - id: business_fit
+      description: Prospect is an active DME billing entity with at least one current product line and NPI or accreditation.
+    - id: relevant_need
+      description: Prospect needs more qualified patients/leads or is actively buying leads/marketing.
+    - id: authority_and_timing
+      description: Speaker is the decision maker or commits to include the decision maker.
+    - id: compliance_readiness
+      description: Prospect confirms physician-order and documentation processes; optional criterion.
+  disqualifiers:
+    - id: no_active_npi_or_accreditation
+      description: No active NPI or accreditation.
+    - id: oig_exclusion
+      description: Supplier appears on the OIG LEIE exclusion list.
+    - id: investigation
+      description: Company is under a payer or CMS investigation.
+report:
+  use_universal_scorecard: true
+  require_evidence: true
+  allow_not_assessable: true

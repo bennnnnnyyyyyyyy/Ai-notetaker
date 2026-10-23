@@ -1,0 +1,25 @@
+campaign_id: roofing_appointment_setting
+name: Prime Ad Roofing Appointment Setting
+version: "1.0"
+meeting_types: [discovery, negotiation, onboarding]
+qualification:
+  requirements:
+    - id: business_fit
+      description: Prospect is a licensed and insured roofing contractor in a target or agreed expansion area.
+    - id: relevant_need
+      description: Prospect needs more inspection/estimate appointments or faster follow-up.
+    - id: capacity_to_convert
+      description: Prospect has appointment capacity and confirms an average job value.
+    - id: authority_and_timing
+      description: Speaker is the decision maker or commits to include the owner/decision maker.
+  disqualifiers:
+    - id: unlicensed_or_uninsured
+      description: Contractor is not licensed and insured.
+    - id: no_sales_capacity
+      description: No estimator or sales staff can run appointments.
+    - id: no_local_presence
+      description: Contractor has no local presence.
+report:
+  use_universal_scorecard: true
+  require_evidence: true
+  allow_not_assessable: true

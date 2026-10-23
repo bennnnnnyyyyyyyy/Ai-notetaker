@@ -1,0 +1,35 @@
+campaign_id: example_campaign
+name: Example Campaign (Template)
+version: "1.0"
+
+meeting_types:
+  - discovery
+  - negotiation
+  - onboarding
+
+qualification:
+  requirements:
+    - id: suitable_business
+      description: Business could realistically use Prime Ad's services
+    - id: relevant_need
+      description: Prospect has a relevant business need
+    - id: authority
+      description: Decision-maker on the call or clear access to one
+    - id: paid_service_interest
+      description: Prospect is willing to discuss a paid service
+
+  disqualifiers:
+    - id: example_disqualifier
+      description: Describe the disqualifying condition here
+
+services:
+  - name: Example Service
+    description: Describe the service being sold in this campaign.
+    terminology:
+      - term: Key Term
+        definition: What this term means in this campaign
+
+report:
+  use_universal_scorecard: true
+  require_evidence: true
+  allow_not_assessable: true

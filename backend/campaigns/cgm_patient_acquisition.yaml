@@ -1,0 +1,26 @@
+campaign_id: cgm_patient_acquisition
+name: Prime Ad CGM Patient Acquisition
+version: "1.0"
+meeting_types: [discovery, negotiation, onboarding]
+qualification:
+  requirements:
+    - id: business_fit
+      description: Prospect is enrolled to bill CGM with at least one named payer type.
+    - id: relevant_need
+      description: Prospect has a qualified-patient shortfall or lead-to-shipped-order fallout.
+    - id: eligibility_and_process_capability
+      description: Prospect has a working or clearly planned eligibility, physician-order, and documentation process.
+    - id: authority_and_timing
+      description: Speaker is the decision maker or commits to include the decision maker.
+  disqualifiers:
+    - id: not_enrolled_to_bill_cgm
+      description: Supplier is not enrolled to bill CGM.
+    - id: oig_exclusion
+      description: Supplier appears on the OIG LEIE exclusion list.
+    - id: no_patient_fulfillment
+      description: Company only resells leads and does not fulfill patients.
+report:
+  use_universal_scorecard: true
+  require_evidence: true
+  allow_not_assessable: true
+  compliance_flag: Do not infer coverage or eligibility; flag PHI/compliance issues for review.
