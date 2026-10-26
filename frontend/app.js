@@ -1,8 +1,27 @@
-const state = { meetings: [], campaigns: [] };
+const state = { meetings: [], campaigns: [], authenticated: false };
 
 const $ = (id) => document.getElementById(id);
 
 let currentMeetingId = null;
+
+function cookieValue(name) {
+  const item = document.cookie.split('; ').find((part) => part.startsWith(`${name}=`));
+  return item ? decodeURIComponent(item.slice(name.length + 1)) : '';
+}
+
+function showLogin(message = '') {
+  state.authenticated = false;
+  $('app-shell').classList.add('hidden');
+  $('login-screen').classList.remove('hidden');
+  $('login-error').textContent = message;
+  $('login-error').classList.toggle('hidden', !message);
+}
+
+function showApp() {
+  state.authenticated = true;
+  $('login-screen').classList.add('hidden');
+  $('app-shell').classList.remove('hidden');
+}
 
 function showView(name) {
   state.currentView = name;
@@ -16,13 +35,21 @@ function showView(name) {
 }
 
 async function api(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrf = cookieValue('ai_admin_csrf');
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+  }
   const response = await fetch(`/api/v1${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    credentials: 'same-origin',
+    headers,
     ...options,
   });
   if (!response.ok) {
     let detail = response.statusText;
     try { detail = (await response.json()).detail || detail; } catch (_) { /* plain error */ }
+    if (response.status === 401) showLogin(detail);
     throw new Error(detail);
   }
   return response.status === 204 ? null : response.json();
@@ -139,6 +166,26 @@ document.addEventListener('click', (event) => {
 });
 
 $('back-btn').onclick = () => showView('meetings');
+$('login-form').onsubmit = async (event) => {
+  event.preventDefault();
+  const error = $('login-error');
+  error.classList.add('hidden');
+  try {
+    await api('/auth/login', { method: 'POST', body: JSON.stringify({
+      username: $('login-username').value.trim(), password: $('login-password').value,
+    }) });
+    $('login-password').value = '';
+    showApp();
+    await startApp();
+  } catch (loginError) {
+    error.textContent = loginError.message;
+    error.classList.remove('hidden');
+  }
+};
+$('logout-btn').onclick = async () => {
+  try { await api('/auth/logout', { method: 'POST' }); } catch (_) { /* session is already unusable */ }
+  showLogin('You have been signed out.');
+};
 $('refresh-readiness').onclick = () => loadReadiness().catch((error) => { $('readiness').textContent = error.message; });
 $('setup-browser-btn').onclick = async () => {
   $('readiness').textContent = 'Opening Chrome with capture profile…';
@@ -164,7 +211,14 @@ $('new-meeting-form').onsubmit = async (event) => {
   } catch (error) { $('form-error').textContent = error.message; $('form-error').classList.remove('hidden'); }
 };
 
-Promise.all([loadMeetings(), loadCampaigns(), loadReadiness()]).catch((error) => { $('recent-meetings').innerHTML = `<p class="form-error">${escapeHtml(error.message)}</p>`; });
+async function startApp() {
+  showApp();
+  await Promise.all([loadMeetings(), loadCampaigns(), loadReadiness()]);
+}
+
+api('/auth/me').then(() => startApp()).catch((error) => {
+  showLogin(error.message === 'Authentication required.' ? '' : error.message);
+});
 
 setInterval(async () => {
   const hasActive = state.meetings.some((meeting) => ['joining', 'waiting_for_admission', 'recording', 'processing'].includes(meeting.status));

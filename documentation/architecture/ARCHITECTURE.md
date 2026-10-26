@@ -7,6 +7,7 @@ Visible browser + authorized Google Meet
               │
               ▼
 FastAPI backend (backend/main.py)
+  ├─ Single-admin authentication, sessions, CSRF, and audit boundary
   ├─ SQLite database (data/app.db)
   ├─ Playwright + FFmpeg capture adapter
   ├─ faster-whisper transcription adapter
@@ -22,6 +23,7 @@ Static dashboard (frontend/)
 | Area | Current implementation | Status |
 |---|---|---|
 | HTTP API | FastAPI routers under `backend/routers/` | Working locally |
+| Admin security | Single-admin PBKDF2 login, server-side sessions, CSRF middleware, audit events | Implemented locally; public deployment not enabled |
 | Persistence | SQLite through `aiosqlite` | Working locally |
 | Dashboard | Plain HTML/CSS/JavaScript served by FastAPI | Working locally |
 | Browser | Playwright visible browser | Scaffolded; real Meet test pending |
@@ -43,5 +45,6 @@ Static dashboard (frontend/)
 - The system intentionally does not auto-approve browser permissions or bypass admission/consent.
 - Speaker diarisation is not implemented; transcript speaker IDs are currently unknown.
 - This is a local prototype, not a deployed multi-user service.
+- The current application is not internet-facing. A future public control plane must use an approved HTTPS/tunnel architecture while the Windows worker and private data remain local.
 
 For the original detailed design and business requirements, see the root [`ARCHITECTURE.md`](../../ARCHITECTURE.md), [`MAIN.md`](../../MAIN.md), and [`dump.md`](../../dump.md).

@@ -1,6 +1,6 @@
 # Phase 2 Plan — Secure Admin Operations, Calendar Discovery, and Meeting Intelligence
 
-Status: Proposed target plan; not implemented
+Status: In progress — Phase 2A local security boundary implemented; public deployment remains unapproved and untested
 
 ## 1. Phase 2 objective
 
@@ -318,4 +318,3 @@ Do not advance a gate based on a plan alone; record test evidence in the worklog
 - Public transcript/audio sharing.
 - Multi-tenant billing and customer self-service.
 - Production deployment before security review and explicit hosting approval.
-

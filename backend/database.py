@@ -86,6 +86,28 @@ CREATE TABLE IF NOT EXISTS report_reviews (
     corrections     TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS admin_sessions (
+    id              TEXT PRIMARY KEY,
+    token_hash      TEXT NOT NULL UNIQUE,
+    csrf_hash       TEXT NOT NULL,
+    username        TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    expires_at      TEXT NOT NULL,
+    last_seen_at    TEXT NOT NULL,
+    revoked_at      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+    id              TEXT PRIMARY KEY,
+    actor           TEXT,
+    action          TEXT NOT NULL,
+    result          TEXT NOT NULL,
+    resource_type   TEXT,
+    resource_id     TEXT,
+    detail          TEXT,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 # ---------------------------------------------------------------------------

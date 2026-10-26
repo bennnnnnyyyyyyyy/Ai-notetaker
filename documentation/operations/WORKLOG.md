@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Implement Phase 2A local admin security boundary
+
+**Objective.** Prepare the local worker for a future authenticated admin URL without exposing the application, changing the deployment model, or starting calendar/scheduled capture work.
+
+**Actions Completed.** Audited the existing FastAPI surface and confirmed the original `/api/v1` meeting, capture, readiness, report, campaign, and Sheets routes were unauthenticated. Added a PBKDF2 password-hash generator, single-admin login/logout, server-side expiring sessions, HttpOnly session cookies, SameSite cookies, CSRF headers for mutations, login rate limiting, protected API middleware, audit-event persistence, and an authenticated dashboard login screen. Added tests for anonymous access, invalid credentials, session expiry, logout, CSRF rejection, path traversal input, private-file exposure, and authenticated route access. Kept local defaults loopback-bound and made API documentation conditional on debug mode.
+
+**System Result.** Sensitive API routes now reject anonymous requests, mutations reject missing/invalid CSRF tokens, invalid credentials are rejected, expired sessions are rejected, logout revokes the session, and private runtime paths are not served as static files. The application remains local-only; no tunnel, domain, hosting provider, calendar integration, scheduled capture, or external deployment was enabled.
+
+**Safety Status.** No credentials or private meeting content were printed. No public access was enabled. No paid service or dependency was added. The administrator must generate a local `ADMIN_PASSWORD_HASH` before using the protected dashboard.
+
 ## 2026-10-26 — Record Phase 1 completion and define Phase 2
 
 **Objective.** Consolidate the work from repository initialization through the verified local transcription foundation and define the next secure product phase.

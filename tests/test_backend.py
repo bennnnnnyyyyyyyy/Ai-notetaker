@@ -1,20 +1,78 @@
 import pytest
+import aiosqlite
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from backend.main import app
 from backend.config import settings
+from backend.auth import create_session, get_session, hash_password
+from backend.database import _DDL
 from backend.schemas.meeting import MeetingCreate
 
 
-def test_health_and_readiness_endpoints():
+@pytest.fixture
+def admin_client(monkeypatch):
+    monkeypatch.setattr(settings, "admin_username", "admin")
+    monkeypatch.setattr(settings, "admin_password_hash", hash_password("correct-password"))
     with TestClient(app) as client:
-        assert client.get("/health").json() == {"status": "ok"}
-        response = client.get("/api/v1/system/readiness")
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin", "password": "correct-password"},
+        )
         assert response.status_code == 200
-        assert set(response.json()["checks"]) == {
-            "python", "playwright_chromium", "ffmpeg", "browser_profile", "audio"
-        }
+        yield client
+
+
+def test_health_and_readiness_endpoints(admin_client):
+    assert admin_client.get("/health").json() == {"status": "ok"}
+    response = admin_client.get("/api/v1/system/readiness")
+    assert response.status_code == 200
+    assert set(response.json()["checks"]) == {
+        "python", "playwright_chromium", "ffmpeg", "browser_profile", "audio"
+    }
+
+
+def test_sensitive_routes_require_authentication(monkeypatch):
+    monkeypatch.setattr(settings, "admin_password_hash", hash_password("correct-password"))
+    with TestClient(app) as client:
+        assert client.get("/api/v1/meetings").status_code == 401
+        assert client.get("/api/v1/system/readiness").status_code == 401
+
+
+def test_invalid_credentials_and_private_files_are_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "admin_username", "admin")
+    monkeypatch.setattr(settings, "admin_password_hash", hash_password("correct-password"))
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"username": "admin", "password": "wrong"}).status_code == 401
+        assert client.get("/data/app.db").status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_expired_server_session_is_rejected():
+    async with aiosqlite.connect(":memory:") as db:
+        db.row_factory = aiosqlite.Row
+        await db.executescript(_DDL)
+        token, _, _ = await create_session(db, "admin")
+        await db.execute("UPDATE admin_sessions SET expires_at = ?", ("2000-01-01T00:00:00+00:00",))
+        await db.commit()
+        assert await get_session(db, token) is None
+
+
+def test_login_csrf_and_logout(admin_client):
+    csrf_cookie = admin_client.cookies.get("ai_admin_csrf")
+    assert csrf_cookie
+    response = admin_client.post("/api/v1/campaigns", json={
+        "name": "Invalid", "config_path": "..\\secrets.yaml", "config_version": "1.0"
+    })
+    assert response.status_code == 403
+    response = admin_client.post(
+        "/api/v1/campaigns",
+        headers={"X-CSRF-Token": csrf_cookie},
+        json={"name": "Invalid", "config_path": "..\\secrets.yaml", "config_version": "1.0"},
+    )
+    assert response.status_code == 422
+    assert admin_client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": csrf_cookie}).status_code == 200
+    assert admin_client.get("/api/v1/meetings").status_code == 401
 
 
 def test_meeting_url_requires_https_google_meet():
@@ -28,22 +86,22 @@ def test_meeting_url_requires_https_google_meet():
         MeetingCreate(url="https://example.com/meeting", meeting_type="discovery")
 
 
-def test_campaign_creation_rejects_paths_outside_bundle():
-    with TestClient(app) as client:
-        response = client.post(
-            "/api/v1/campaigns",
-            json={
-                "name": "Invalid",
-                "config_path": "..\\secrets.yaml",
-                "config_version": "1.0",
-            },
-        )
+def test_campaign_creation_rejects_paths_outside_bundle(admin_client):
+    csrf_cookie = admin_client.cookies.get("ai_admin_csrf")
+    response = admin_client.post(
+        "/api/v1/campaigns",
+        headers={"X-CSRF-Token": csrf_cookie},
+        json={
+            "name": "Invalid",
+            "config_path": "..\\secrets.yaml",
+            "config_version": "1.0",
+        },
+    )
     assert response.status_code == 422
 
 
-def test_google_sheets_status_is_explicitly_unconfigured(monkeypatch):
+def test_google_sheets_status_is_explicitly_unconfigured(monkeypatch, admin_client):
     monkeypatch.setattr(settings, "google_sheets_spreadsheet_id", "")
-    with TestClient(app) as client:
-        response = client.get("/api/v1/integrations/google-sheets/status")
+    response = admin_client.get("/api/v1/integrations/google-sheets/status")
     assert response.status_code == 200
     assert response.json()["status"] == "needs_setup"

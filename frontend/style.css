@@ -74,6 +74,7 @@ body {
   background: var(--surface2);
   color: var(--text);
 }
+.nav-button { width: 100%; text-align: left; font: inherit; border: 0; cursor: pointer; }
 
 :is(a, button, input, select, textarea):focus-visible {
   outline: 3px solid var(--accent);
@@ -184,6 +185,9 @@ textarea { resize: vertical; }
 .form-actions { margin-top: .5rem; }
 .form-error { color: var(--danger); font-size: .82rem; margin-top: .5rem; }
 .hidden { display: none; }
+.login-screen { min-height: 100vh; width: 100%; display: grid; place-items: center; padding: 1rem; }
+.login-card { width: min(100%, 420px); }
+.app-shell { width: 100%; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .section-heading h2 { margin: 0; }
 .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); padding: .45rem .75rem; border-radius: 6px; cursor: pointer; }

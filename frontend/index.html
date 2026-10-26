@@ -8,6 +8,18 @@
 </head>
 <body>
 
+  <section id="login-screen" class="login-screen" aria-labelledby="login-heading">
+    <form id="login-form" class="form-card login-card">
+      <h1 id="login-heading">Admin sign in</h1>
+      <p class="muted">Meeting Intel is protected. Sign in to continue.</p>
+      <label>Username<input id="login-username" autocomplete="username" required /></label>
+      <label>Password<input id="login-password" type="password" autocomplete="current-password" required /></label>
+      <button class="btn-primary" type="submit">Sign in</button>
+      <p id="login-error" class="form-error hidden" role="alert" aria-live="assertive"></p>
+    </form>
+  </section>
+
+  <div id="app-shell" class="app-shell hidden">
   <nav class="sidebar">
     <div class="logo">
       <span class="logo-mark">PA</span>
@@ -18,6 +30,7 @@
       <li><a href="#" class="nav-link" data-view="meetings">Meetings</a></li>
       <li><a href="#" class="nav-link" data-view="new-meeting">+ New Meeting</a></li>
       <li><a href="#" class="nav-link" data-view="campaigns">Campaigns</a></li>
+      <li><button class="nav-link nav-button" id="logout-btn" type="button">Sign out</button></li>
     </ul>
   </nav>
 
@@ -97,6 +110,7 @@
     </section>
 
   </main>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>

@@ -77,6 +77,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - No real meeting audio has been confirmed in a saved WAV file.
 - No full-length production transcript or analysis report has been validated from a meeting. The isolated 45-second real-recording test is persisted and verified.
 - The eight-stage analysis pipeline remains intentionally unrun for this milestone.
+- Phase 2A local admin security boundary is implemented: protected API routes, server-side sessions, CSRF checks, rate-limited login, logout, and audit events. No public tunnel or remote deployment is enabled.
 - Ollama model availability and full CPU processing time remain unverified.
 - Speaker diarization is not implemented.
 

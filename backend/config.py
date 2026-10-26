@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     app_debug: bool = False
+    admin_username: str = "admin"
+    admin_password_hash: str = ""
+    admin_session_ttl_seconds: int = 28800
+    admin_secure_cookies: bool = False
 
     # Database
     database_path: Path = PROJECT_ROOT / "data/app.db"
