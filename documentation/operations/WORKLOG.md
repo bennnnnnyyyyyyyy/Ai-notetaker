@@ -1,5 +1,25 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Prevent Meet navigation from hanging on about:blank
+
+**Objective.** Resolve the capture worker remaining in `joining` while the visible browser stayed on `about:blank`.
+
+**Actions Completed.** Changed Playwright navigation to wait for the initial navigation commit instead of the full Meet DOM content event, which can remain open while Meet loads its application shell. Added a short settle period so the visible browser can continue loading Meet normally.
+
+**System Result.** A new capture attempt should leave `about:blank` promptly and navigate to the supplied Meet URL. The user still controls joining, admission, and consent in the visible browser.
+
+**Safety Status.** No authentication or consent was bypassed. No meeting content was inspected or recorded by this change.
+
+## 2026-10-26 — Confirm remaining profile-lock condition
+
+**Objective.** Verify the pushed installed-Chrome change during a capture retry.
+
+**Actions Completed.** Confirmed Git commit and push succeeded. Confirmed the worker now launches the installed Chrome executable, but the configured Chrome User Data directory still had Chrome processes active, so Playwright received `TargetClosedError` and the meeting remained failed.
+
+**System Result.** The code change is present; the next test requires every Chrome process to be closed, including background processes visible in Task Manager, before starting capture.
+
+**Safety Status.** No browser was force-closed, no credentials were inspected, no meeting was joined, and no recording was created.
+
 ## 2026-10-26 — Use installed Chrome for configured profile
 
 **Objective.** Resolve repeated capture startup failures after all normal Chrome windows had been closed.

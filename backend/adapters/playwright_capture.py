@@ -113,7 +113,11 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
             ) from exc
 
         logger.info("Navigating to %s", meeting_url)
-        await self._page.goto(meeting_url, wait_until="domcontentloaded")
+        # `domcontentloaded` can wait indefinitely on Meet's application shell
+        # and leave the user staring at about:blank. `commit` confirms that the
+        # navigation started; Meet can continue loading in the visible browser.
+        await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
+        await asyncio.sleep(2)
 
         # Detect an invalid device or an FFmpeg startup failure immediately.
         await asyncio.sleep(0.5)
