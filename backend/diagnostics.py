@@ -48,9 +48,15 @@ def _browser_profile_check(profile: Path | None) -> dict:
                 "Click 'Setup capture browser' on the dashboard to sign in once."
             ),
         }
-    # Proxy for a completed Google sign-in: the Cookies file exists in Default/.
-    cookies = profile / "Default" / "Cookies"
-    signed_in = cookies.is_file()
+    # Proxy for a completed Google sign-in: modern Chromium stores Cookies in Network/Cookies.
+    profile_name = settings.browser_profile_name or "Default"
+    cookie_candidates = [
+        profile / profile_name / "Network" / "Cookies",
+        profile / profile_name / "Cookies",
+        profile / "Default" / "Network" / "Cookies",
+        profile / "Default" / "Cookies",
+    ]
+    signed_in = any(candidate.is_file() for candidate in cookie_candidates)
     return {
         "status": "ready" if signed_in else "needs_setup",
         "profile_dir": str(profile),

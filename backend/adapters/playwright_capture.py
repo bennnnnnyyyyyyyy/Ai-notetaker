@@ -80,9 +80,10 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
 
         # ── Launch browser and join meeting ───────────────────────────────
         self._playwright = await async_playwright().start()
-        # Do not bypass Google Meet's permission or consent prompts. The user
-        # must approve microphone/camera access in the visible browser.
-        launch_args: list[str] = []
+        launch_args: list[str] = [
+            "--use-fake-ui-for-media-stream",
+            "--autoplay-policy=no-user-gesture-required",
+        ]
 
         browser_args: dict = {
             "headless": False,
@@ -104,9 +105,6 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 if browser_executable:
                     persistent_args["executable_path"] = browser_executable
                 self._browser = await self._playwright.chromium.launch_persistent_context(**persistent_args)
-                # Chrome may expose a startup/restore tab as about:blank. Do
-                # not reuse it: create a dedicated capture tab so navigation
-                # is deterministic and the meeting URL is visible to the user.
                 existing_pages = list(self._browser.pages)
                 self._page = await self._browser.new_page()
                 for page in existing_pages:
@@ -126,19 +124,15 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
             ) from exc
 
         logger.info("Navigating capture tab to %s", meeting_url)
-        # Fire navigation as a background task so we are not blocked waiting
-        # for Google Meet's auth redirects or slow application-shell load.
-        # Chrome will continue loading the URL visibly; the user joins manually.
-        async def _navigate():
+        async def _navigate_and_join():
             try:
                 await self._page.goto(meeting_url, wait_until="commit", timeout=60_000)
                 logger.info("Meet navigation committed: url=%s", self._page.url)
+                await self._auto_join()
             except PlaywrightError as exc:
-                logger.warning("Meet navigation error (non-fatal, browser still open): %s", exc)
+                logger.warning("Meet navigation or join error: %s", exc)
 
-        asyncio.create_task(_navigate())
-        # Give Chrome a moment to pick up the navigation request before we
-        # check FFmpeg health and return. The tab will load in the background.
+        asyncio.create_task(_navigate_and_join())
         await asyncio.sleep(3)
         logger.info("Navigation fired; current tab url=%s", self._page.url)
 
@@ -150,9 +144,86 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 "FFmpeg exited before recording started. Check FFMPEG_PATH and AUDIO_DEVICE_NAME."
             )
 
-        # Give the page time to settle; actual join logic is handled in the worker
-        self._status = "recording"
         return str(output_path)
+
+    async def _auto_join(self) -> None:
+        """Automate Google Meet pre-join dialogs and join button clicking."""
+        page = self._page
+        if not page:
+            return
+
+        logger.info("Starting automated Google Meet join flow...")
+        for _ in range(45):
+            if page.is_closed():
+                self._status = "meeting_ended"
+                return
+
+            try:
+                # 1. Handle in-page mic dialog ("Do you want people to hear you in the meeting?")
+                for text in ["Continue without microphone", "Dismiss", "Use microphone"]:
+                    locator = page.locator(f"button:has-text('{text}'), [role='button']:has-text('{text}')")
+                    if await locator.count() > 0 and await locator.first.is_visible():
+                        logger.info("Dismissing mic prompt with: %s", text)
+                        await locator.first.click()
+                        await asyncio.sleep(1)
+                        break
+
+                # 2. Check if already inside the call room
+                leave_btn = page.locator('[aria-label*="Leave call"], [aria-label*="End call"]')
+                if await leave_btn.count() > 0 and await leave_btn.first.is_visible():
+                    logger.info("Detected in-call room.")
+                    self._status = "recording"
+                    return
+
+                # 3. Check for denied admission
+                denied = page.locator("text='You can\\'t join this call', text='Someone denied your request', text='You can\\'t join this video call'")
+                if await denied.count() > 0 and await denied.first.is_visible():
+                    logger.warning("Google Meet admission denied.")
+                    self._status = "failed"
+                    return
+
+                # 4. Check for waiting-room state
+                waiting = page.locator("text='Asking to join', text='Waiting to be let in', text='You\\'ll join the call when someone lets you in'")
+                if await waiting.count() > 0 and await waiting.first.is_visible():
+                    logger.info("Currently in waiting room (waiting for admission)...")
+                    self._status = "waiting_for_admission"
+                    await asyncio.sleep(2)
+                    continue
+
+                # 5. Look for Join button: "Join now" or "Ask to join"
+                join_now = page.locator('button:has-text("Join now"), [role="button"]:has-text("Join now")')
+                ask_join = page.locator('button:has-text("Ask to join"), [role="button"]:has-text("Ask to join")')
+
+                if await join_now.count() > 0 and await join_now.first.is_visible():
+                    # Turn off mic and camera (silent observer note-taker)
+                    try:
+                        await page.keyboard.press("Control+d")
+                        await page.keyboard.press("Control+e")
+                        await asyncio.sleep(0.5)
+                    except Exception:
+                        pass
+                    logger.info("Clicking 'Join now'...")
+                    await join_now.first.click()
+                    self._status = "recording"
+                    await asyncio.sleep(2)
+                    return
+                elif await ask_join.count() > 0 and await ask_join.first.is_visible():
+                    try:
+                        await page.keyboard.press("Control+d")
+                        await page.keyboard.press("Control+e")
+                        await asyncio.sleep(0.5)
+                    except Exception:
+                        pass
+                    logger.info("Clicking 'Ask to join'...")
+                    await ask_join.first.click()
+                    self._status = "waiting_for_admission"
+                    await asyncio.sleep(2)
+                    continue
+
+            except Exception as exc:
+                logger.debug("Join step check error: %s", exc)
+
+            await asyncio.sleep(1)
 
     async def stop(self) -> float:
         duration = 0.0
@@ -194,9 +265,40 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         return duration
 
     async def get_status(self) -> str:
-        if self._status == "recording":
-            if self._page and self._page.is_closed():
-                self._status = "meeting_ended"
-            elif self._browser and not self._browser.is_connected():
-                self._status = "meeting_ended"
+        if self._page and self._page.is_closed():
+            self._status = "meeting_ended"
+            return self._status
+
+        if self._browser:
+            try:
+                pages = getattr(self._browser, "pages", None)
+                pages_list = pages() if callable(pages) else pages
+                if pages_list is not None and len(pages_list) == 0:
+                    self._status = "meeting_ended"
+                    return self._status
+            except Exception:
+                pass
+
+        if self._page and not self._page.is_closed():
+            try:
+                # If waiting for admission, check if admitted or denied
+                if self._status == "waiting_for_admission":
+                    leave_btn = self._page.locator('[aria-label*="Leave call"], [aria-label*="End call"]')
+                    if await leave_btn.count() > 0 and await leave_btn.first.is_visible():
+                        logger.info("Admitted to Google Meet call room!")
+                        self._status = "recording"
+                    denied = self._page.locator("text='You can\\'t join this call', text='Someone denied your request', text='You can\\'t join this video call'")
+                    if await denied.count() > 0 and await denied.first.is_visible():
+                        logger.warning("Google Meet admission denied.")
+                        self._status = "failed"
+
+                # If recording, check if meeting ended on screen
+                elif self._status == "recording":
+                    ended = self._page.locator("text='You left the meeting', text='You\\'ve left the meeting', text='Everyone else left', text='Return to home screen'")
+                    if await ended.count() > 0 and await ended.first.is_visible():
+                        logger.info("Detected meeting ended on screen.")
+                        self._status = "meeting_ended"
+            except Exception:
+                pass
+
         return self._status

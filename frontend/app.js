@@ -2,7 +2,11 @@ const state = { meetings: [], campaigns: [] };
 
 const $ = (id) => document.getElementById(id);
 
+let currentMeetingId = null;
+
 function showView(name) {
+  state.currentView = name;
+  if (name !== 'meeting-detail') currentMeetingId = null;
   document.querySelectorAll('.view').forEach((view) => view.classList.remove('active'));
   const view = $(`view-${name}`);
   if (view) view.classList.add('active');
@@ -66,6 +70,7 @@ async function loadReadiness() {
 }
 
 async function openMeeting(id) {
+  currentMeetingId = id;
   const meeting = await api(`/meetings/${id}`);
   $('detail-content').innerHTML = `<h1>Meeting</h1><div class="form-card">
     <p><strong>Type:</strong> ${escapeHtml(meeting.meeting_type)}</p>
@@ -118,8 +123,23 @@ $('new-meeting-form').onsubmit = async (event) => {
 
 Promise.all([loadMeetings(), loadCampaigns(), loadReadiness()]).catch((error) => { $('recent-meetings').innerHTML = `<p class="form-error">${escapeHtml(error.message)}</p>`; });
 
-setInterval(() => {
-  if (state.meetings.some((meeting) => ['joining', 'waiting_for_admission', 'recording', 'processing'].includes(meeting.status))) {
-    loadMeetings().catch(() => {});
+setInterval(async () => {
+  const hasActive = state.meetings.some((meeting) => ['joining', 'waiting_for_admission', 'recording', 'processing'].includes(meeting.status));
+  if (hasActive || currentMeetingId) {
+    await loadMeetings().catch(() => {});
+    if (currentMeetingId && state.currentView === 'meeting-detail') {
+      const meeting = await api(`/meetings/${currentMeetingId}`).catch(() => null);
+      if (meeting) {
+        $('detail-content').innerHTML = `<h1>Meeting</h1><div class="form-card">
+          <p><strong>Type:</strong> ${escapeHtml(meeting.meeting_type)}</p>
+          <p role="status" aria-live="polite"><strong>Status:</strong> <span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></p>
+          <p><strong>URL:</strong> <a href="${escapeHtml(meeting.url)}" target="_blank" rel="noopener">${escapeHtml(meeting.url)}</a></p>
+          ${meeting.error_message ? `<p class="form-error">${escapeHtml(meeting.error_message)}</p>` : ''}
+          ${['pending', 'failed'].includes(meeting.status) ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
+        </div>`;
+        const start = $(`start-${meeting.id}`);
+        if (start) start.onclick = async () => { await api(`/meetings/${meeting.id}/start-capture`, { method: 'POST' }); await loadMeetings(); await openMeeting(meeting.id); };
+      }
+    }
   }
-}, 3000);
+}, 2000);

@@ -59,14 +59,16 @@ async def run_capture(meeting_id: str) -> None:
             await _set_status(db, meeting_id, "joining")
             recording_path = await adapter.start(meeting_url, meeting_id)
             logger.info("Recording to %s", recording_path)
-            await _set_status(db, meeting_id, "recording")
-
+            current_status = "joining"
             # Wait for meeting end or timeout
             elapsed = 0
             while elapsed < MAX_DURATION:
                 await asyncio.sleep(POLL_INTERVAL)
                 elapsed += POLL_INTERVAL
                 status = await adapter.get_status()
+                if status != current_status and status not in ("meeting_ended", "failed"):
+                    current_status = status
+                    await _set_status(db, meeting_id, status)
                 if status in ("meeting_ended", "failed"):
                     break
 

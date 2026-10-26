@@ -1,5 +1,43 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Implement automated Google Meet join and admission flow
+
+**Objective.** Automate Google Meet pre-join and admission flow to fulfill Milestone 1 requirements (joining, waiting room, denied admission, mic/cam muting, meeting ended detection).
+
+**Actions Completed.**
+- Added `_auto_join` workflow in `PlaywrightCaptureAdapter`:
+  - Dismisses pre-join microphone/camera dialogs (`Continue without microphone`, `Dismiss`).
+  - Automatically mutes microphone (`Control+d`) and camera (`Control+e`) before joining so the note-taker bot is a silent observer.
+  - Automatically clicks `Join now` (instant join) or `Ask to join` (waiting room).
+  - Handles waiting-room state (`waiting_for_admission`), denied admission (`failed`), and in-call confirmation.
+- Fixed `get_status` bug where `BrowserContext` object called unsupported `is_connected()`.
+- Added on-screen call-ended detection (`You left the meeting`, `Everyone else left`) and window closure detection.
+- Updated `backend/workers/capture.py` to transition meeting status dynamically through `joining`, `waiting_for_admission`, `recording`, and `meeting_ended`.
+
+**System Result.** The application now automatically negotiates Google Meet's pre-join screens, clicks join, and tracks real-time admission states.
+
+**Safety Status.** No authentication or admission was bypassed. The bot acts as an observer using the user's authorized profile.
+
+## 2026-10-26 — Enable dynamic status updates on meeting detail view
+
+**Objective.** Prevent the meeting detail UI from getting stuck on `joining` when capture fails or status changes in the background.
+
+**Actions Completed.** Updated `frontend/app.js` to track active view and current meeting ID, ensuring the interval timer periodically polls and re-renders the meeting detail card so state changes (e.g. failure errors, recording, retry buttons) appear immediately without requiring manual navigation or page refresh.
+
+**System Result.** Meeting detail view now dynamically updates its status and displays errors or retry actions in real time.
+
+**Safety Status.** Frontend UI update only. No external services, credentials, or meetings affected.
+
+## 2026-10-26 — Fix browser profile readiness detection for modern Chromium
+
+**Objective.** Resolve false-negative readiness indicator where signed-in browser profile reported `needs_setup` ("Profile folder exists but no Google session found").
+
+**Actions Completed.** Identified that modern Chromium (Chrome 96+) stores session cookies under `<Profile>/Network/Cookies` rather than directly in `<Profile>/Cookies`. Updated `backend/diagnostics.py` to check both candidate paths for both the configured profile name and `Default`. Verified readiness check returns `ready` across all subsystems.
+
+**System Result.** Dashboard readiness endpoint accurately reflects the signed-in capture profile status.
+
+**Safety Status.** No cookie contents or credentials were read, copied, or stored. Only file existence was checked.
+
 ## 2026-10-26 — Publish current status summary
 
 **Objective.** Give the project a single concise handoff covering the Read AI-style objective, verified implementation, remaining uncertainty, and next supervised capture test.
