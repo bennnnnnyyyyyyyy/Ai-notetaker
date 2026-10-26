@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Redesign admin and operator workspace UI
+
+**Objective.** Replace the prototype dashboard with a usable admin console and operator-facing workspace for the PC-hosted meeting worker.
+
+**Actions Completed.** Rebuilt the static frontend with a deliberate operations-console visual system, responsive navigation, overview metrics, readiness panel, meeting list, capture form, campaign cards, settings surface, and authenticated session chrome. Added report rendering to meeting detail, including scorecards, evidence references, commercial terms, actions, outcome, and transcript-quality warnings. Added clear local-first and supervised-capture language. Added an operator-style workspace surface while retaining the current backend’s single-admin session boundary.
+
+**Hosting Boundary.** The frontend can be served separately through Pages or Cloudflare, but the PC backend is bound locally and cannot be reached from an online frontend without an approved HTTPS tunnel/private network path. Browser capture, credentials, recordings, transcripts, and reports remain on the worker PC.
+
+**Verification.** `node --check frontend/app.js` passed; `py -3 -m compileall -q backend` passed; FastAPI import passed; `py -3 -m pytest -q` → 14 passed. No meeting, report, credential, or external integration data was changed.
+
+**Remaining Work.** True separate admin/user pages require backend users, roles, authorization checks, and a migration beyond the current single-admin session. Cloudflare/Pages deployment requires an approved HTTPS access model before exposure.
+
 ## 2026-10-26 — Add generalized reporting for unconfigured RPM meetings
 
 **Objective.** Support meetings such as RPM that do not belong to a saved campaign.

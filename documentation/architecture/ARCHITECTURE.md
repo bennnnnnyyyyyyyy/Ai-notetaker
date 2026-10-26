@@ -15,7 +15,7 @@ FastAPI backend (backend/main.py)
   └─ Manual Google Sheets export adapter
               │
               ▼
-Static dashboard (frontend/)
+Static admin/operator workspace (frontend/)
 ```
 
 ## Runtime components
@@ -25,7 +25,7 @@ Static dashboard (frontend/)
 | HTTP API | FastAPI routers under `backend/routers/` | Working locally |
 | Admin security | Single-admin PBKDF2 login, server-side sessions, CSRF middleware, audit events | Implemented locally; public deployment not enabled |
 | Persistence | SQLite through `aiosqlite` | Working locally |
-| Dashboard | Plain HTML/CSS/JavaScript served by FastAPI | Working locally |
+| Dashboard | Responsive HTML/CSS/JavaScript admin/operator workspace served by FastAPI | Working locally; role separation pending |
 | Browser | Playwright visible browser | Scaffolded; real Meet test pending |
 | Audio | FFmpeg DirectShow input configured for a named device | FFmpeg and CABLE device verified; real meeting routing test pending |
 | Transcription | faster-whisper CPU `base` model | Implemented; model download on first use |
@@ -44,7 +44,7 @@ Static dashboard (frontend/)
 - The capture adapter opens the browser but does not yet robustly automate the authorized join flow or identify all Meet lifecycle states.
 - The system intentionally does not auto-approve browser permissions or bypass admission/consent.
 - Speaker diarisation is not implemented; transcript speaker IDs are currently unknown.
-- This is a local prototype, not a deployed multi-user service.
+- This is a local prototype, not a deployed multi-user service. The frontend now has admin and operator workspace surfaces, but the backend still authenticates one admin identity; separate users/roles require the Phase 2 identity work.
 - The current application is not internet-facing. A future public control plane must use an approved HTTPS/tunnel architecture while the Windows worker and private data remain local.
 
 For the original detailed design and business requirements, see the root [`ARCHITECTURE.md`](../../ARCHITECTURE.md), [`MAIN.md`](../../MAIN.md), and [`dump.md`](../../dump.md).

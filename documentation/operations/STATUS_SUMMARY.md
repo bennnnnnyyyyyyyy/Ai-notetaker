@@ -94,6 +94,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - Speaker diarization is not implemented.
 - Public deployment remains blocked pending a real HTTPS boundary, trusted proxy policy, shared/durable rate limiting, durable jobs, and supervised remote-access testing.
 - The report API returns v4 correctly, but the current dashboard detail view does not yet render report contents; only meeting controls and Google Sheets export are shown.
+- The dashboard has now been redesigned with an admin-console visual system and meeting-detail report rendering. A user/operator surface is present in the frontend, but separate backend user roles are not yet implemented.
 
 ## Next action: report review and supervised follow-up
 

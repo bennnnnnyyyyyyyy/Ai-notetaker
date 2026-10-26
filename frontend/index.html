@@ -3,115 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prime Ad Meeting Intelligence</title>
+  <title>Prime Ad / Meeting Intelligence</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-
   <section id="login-screen" class="login-screen" aria-labelledby="login-heading">
-    <form id="login-form" class="form-card login-card">
-      <h1 id="login-heading">Admin sign in</h1>
-      <p class="muted">Meeting Intel is protected. Sign in to continue.</p>
+    <div class="login-orbit orbit-a"></div><div class="login-orbit orbit-b"></div>
+    <form id="login-form" class="login-card">
+      <div class="eyebrow">PRIME AD / INTELLIGENCE</div>
+      <h1 id="login-heading">Make every meeting<br><em>count.</em></h1>
+      <p class="login-copy">Your private workspace for capture, evidence, and follow-through.</p>
       <label>Username<input id="login-username" autocomplete="username" required /></label>
       <label>Password<input id="login-password" type="password" autocomplete="current-password" required /></label>
-      <button class="btn-primary" type="submit">Sign in</button>
+      <button class="btn-primary btn-wide" type="submit">Enter workspace <span>→</span></button>
       <p id="login-error" class="form-error hidden" role="alert" aria-live="assertive"></p>
     </form>
   </section>
 
   <div id="app-shell" class="app-shell hidden">
-  <nav class="sidebar">
-    <div class="logo">
-      <span class="logo-mark">PA</span>
-      <span class="logo-text">Meeting Intel</span>
-    </div>
-    <ul class="nav-links">
-      <li><a href="#" class="nav-link active" data-view="dashboard">Dashboard</a></li>
-      <li><a href="#" class="nav-link" data-view="meetings">Meetings</a></li>
-      <li><a href="#" class="nav-link" data-view="new-meeting">+ New Meeting</a></li>
-      <li><a href="#" class="nav-link" data-view="campaigns">Campaigns</a></li>
-      <li><button class="nav-link nav-button" id="logout-btn" type="button">Sign out</button></li>
-    </ul>
-  </nav>
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">PA</span><div><strong>Prime Ad</strong><small>Meeting intelligence</small></div></div>
+      <button class="workspace-switcher" id="workspace-switcher" type="button"><span class="workspace-dot"></span><div><small>Workspace</small><strong id="workspace-label">Admin console</strong></div><span class="chevron">⌄</span></button>
+      <nav class="nav-links" aria-label="Main navigation">
+        <div class="nav-label">Operate</div>
+        <a href="#" class="nav-link active" data-view="dashboard"><span>◈</span>Overview</a>
+        <a href="#" class="nav-link" data-view="meetings"><span>◌</span>Meetings</a>
+        <a href="#" class="nav-link" data-view="new-meeting"><span>＋</span>New capture</a>
+        <div class="nav-label nav-label-spaced">Manage</div>
+        <a href="#" class="nav-link admin-only" data-view="campaigns"><span>▦</span>Campaigns</a>
+        <a href="#" class="nav-link admin-only" data-view="settings"><span>⚙</span>Settings</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="privacy-note"><span>●</span><div><strong>Local-first</strong><small>Data stays on this PC</small></div></div><button class="signout" id="logout-btn" type="button">Sign out <span>↗</span></button></div>
+    </aside>
 
-  <main class="main">
+    <main class="main">
+      <header class="topbar"><div><span class="breadcrumb">Workspace / </span><strong id="page-context">Overview</strong></div><div class="topbar-actions"><span class="live-indicator"><i></i> Local worker online</span><div class="avatar" id="user-avatar">A</div></div></header>
 
-    <!-- ── Dashboard ────────────────────────────────────────────── -->
-    <section id="view-dashboard" class="view active" aria-labelledby="dashboard-heading">
-      <h1 id="dashboard-heading">Dashboard</h1>
-      <div class="stat-grid" id="stat-grid">
-        <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total meetings</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-processing">—</div><div class="stat-label">Processing</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-completed">—</div><div class="stat-label">Completed</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-failed">—</div><div class="stat-label">Failed</div></div>
-      </div>
-      <div class="form-card readiness-card">
-        <div class="section-heading"><h2>Local capture readiness</h2><div style="display:flex;gap:.5rem"><button class="btn-secondary" id="setup-browser-btn">Setup capture browser</button><button class="btn-secondary" id="refresh-readiness">Refresh</button></div></div>
-        <div id="readiness" class="muted" role="status" aria-live="polite">Checking this PC…</div>
-      </div>
-      <h2>Recent Meetings</h2>
-      <div id="recent-meetings" class="meeting-list"></div>
-    </section>
+      <section id="view-dashboard" class="view active">
+        <div class="page-intro"><div><div class="eyebrow">MONDAY, 26 OCTOBER 2026</div><h1>Good evening, <em>Admin.</em></h1><p>Here’s the pulse of your meeting operation.</p></div><button class="btn-primary" data-go="new-meeting">＋ Register meeting</button></div>
+        <div class="stat-grid" id="stat-grid"><div class="stat-card stat-dark"><small>ALL MEETINGS</small><strong id="stat-total">—</strong><span class="stat-foot">Across this workspace</span></div><div class="stat-card"><small>IN PROGRESS</small><strong id="stat-processing">—</strong><span class="stat-foot status-text-orange">Live worker activity</span></div><div class="stat-card"><small>COMPLETED</small><strong id="stat-completed">—</strong><span class="stat-foot status-text-green">Ready for review</span></div><div class="stat-card"><small>NEEDS ATTENTION</small><strong id="stat-failed">—</strong><span class="stat-foot status-text-red">Failed or blocked</span></div></div>
+        <div class="dashboard-grid"><section class="panel panel-wide"><div class="panel-heading"><div><div class="eyebrow">ACTIVITY</div><h2>Recent meetings</h2></div><button class="text-button" data-go="meetings">View all →</button></div><div id="recent-meetings" class="meeting-list"></div></section><section class="panel"><div class="panel-heading"><div><div class="eyebrow">SYSTEM</div><h2>Capture readiness</h2></div><button class="icon-button" id="refresh-readiness" title="Refresh readiness">↻</button></div><div id="readiness" class="readiness-list">Checking this PC…</div><button class="btn-secondary btn-wide setup-btn" id="setup-browser-btn">Open capture browser</button></section></div>
+      </section>
 
-    <!-- ── Meetings list ─────────────────────────────────────────── -->
-    <section id="view-meetings" class="view">
-      <h1>Meetings</h1>
-      <div id="meetings-list" class="meeting-list"></div>
-    </section>
+      <section id="view-meetings" class="view"><div class="page-intro compact"><div><div class="eyebrow">OPERATIONS</div><h1>Meetings</h1><p>Capture, review, and move conversations forward.</p></div><button class="btn-primary" data-go="new-meeting">＋ New capture</button></div><div class="toolbar"><div class="search-placeholder">⌕ <span>Search meetings</span></div><span class="toolbar-note">Local records only</span></div><div id="meetings-list" class="meeting-list meeting-list-page"></div></section>
 
-    <!-- ── New meeting form ──────────────────────────────────────── -->
-    <section id="view-new-meeting" class="view">
-      <h1>Register Meeting</h1>
-      <form id="new-meeting-form" class="form-card">
-        <label>Google Meet URL *
-          <input id="f-url" type="url" required placeholder="https://meet.google.com/xxx-xxxx-xxx" />
-        </label>
-        <label>Meeting Type *
-          <select id="f-type" required>
-            <option value="discovery">Sales / Discovery</option>
-            <option value="negotiation">Deal Negotiation</option>
-            <option value="onboarding">Client Onboarding</option>
-          </select>
-        </label>
-        <label>Campaign
-          <select id="f-campaign">
-            <option value="">— None —</option>
-          </select>
-        </label>
-        <label>Opener Name
-          <input id="f-opener" type="text" placeholder="e.g. James" />
-        </label>
-        <label>Closer Name
-          <input id="f-closer" type="text" placeholder="e.g. Ben" />
-        </label>
-        <label>Scheduled At (optional)
-          <input id="f-scheduled" type="datetime-local" />
-        </label>
-        <label>Pre-booking Notes
-          <textarea id="f-notes" rows="3" placeholder="What the opener established before this meeting…"></textarea>
-        </label>
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Register & Start Capture</button>
-        </div>
-        <p id="form-error" class="form-error hidden" role="alert" aria-live="assertive"></p>
-      </form>
-    </section>
+      <section id="view-new-meeting" class="view"><div class="page-intro compact"><div><div class="eyebrow">NEW RECORD</div><h1>Register a meeting</h1><p>Start a supervised capture from an authorized Google account.</p></div></div><form id="new-meeting-form" class="form-card capture-form"><div class="form-section-title">Meeting details <span>01</span></div><label>Google Meet URL *<input id="f-url" type="url" required placeholder="https://meet.google.com/xxx-xxxx-xxx" /></label><div class="form-row"><label>Meeting type *<select id="f-type" required><option value="discovery">Sales / Discovery</option><option value="negotiation">Deal Negotiation</option><option value="onboarding">Client Onboarding</option></select></label><label>Campaign<select id="f-campaign"><option value="">— Generalized report —</option></select></label></div><div class="form-row"><label>Opener name<input id="f-opener" type="text" placeholder="e.g. Jane" /></label><label>Closer name<input id="f-closer" type="text" placeholder="e.g. Daniel" /></label></div><label>Scheduled at <input id="f-scheduled" type="datetime-local" /></label><label>Pre-booking notes<textarea id="f-notes" rows="4" placeholder="What was established before this meeting?"></textarea></label><div class="consent-note"><span>✓</span><div><strong>Supervised capture</strong><small>The browser opens visibly. You remain responsible for authentication, admission, and recording consent.</small></div></div><div class="form-actions"><button type="submit" class="btn-primary">Register & start capture <span>→</span></button></div><p id="form-error" class="form-error hidden" role="alert"></p></form></section>
 
-    <!-- ── Meeting detail / report ──────────────────────────────── -->
-    <section id="view-meeting-detail" class="view">
-      <button class="btn-back" id="back-btn">← Back</button>
-      <div id="detail-content"></div>
-    </section>
-
-    <!-- ── Campaigns ────────────────────────────────────────────── -->
-    <section id="view-campaigns" class="view">
-      <h1>Campaigns</h1>
-      <div id="campaigns-list" class="meeting-list"></div>
-    </section>
-
-  </main>
+      <section id="view-meeting-detail" class="view"><button class="btn-back" id="back-btn">← Back to meetings</button><div id="detail-content"></div></section>
+      <section id="view-campaigns" class="view"><div class="page-intro compact"><div><div class="eyebrow">ADMIN / GOVERNANCE</div><h1>Campaigns</h1><p>Qualification rules that shape every report.</p></div></div><div id="campaigns-list" class="campaign-grid"></div></section>
+      <section id="view-settings" class="view"><div class="page-intro compact"><div><div class="eyebrow">ADMIN / CONFIGURATION</div><h1>Settings</h1><p>Runtime configuration is managed locally on the worker PC.</p></div></div><div class="settings-grid"><div class="panel"><div class="eyebrow">ACCESS</div><h2>Current session</h2><p class="settings-value">Authenticated admin</p><p class="muted">Multi-user roles and permissions are planned for the next backend milestone.</p></div><div class="panel"><div class="eyebrow">DEPLOYMENT</div><h2>Hosting boundary</h2><p class="settings-value">Local worker / remote-ready UI</p><p class="muted">Do not expose this PC directly. Use an approved HTTPS tunnel or private network boundary.</p></div></div></section>
+    </main>
   </div>
-
   <script src="/static/app.js"></script>
 </body>
 </html>
