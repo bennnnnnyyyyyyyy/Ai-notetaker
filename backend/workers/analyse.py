@@ -180,7 +180,11 @@ def _build_system_prompt(meeting: dict, campaign: dict) -> str:
         f"Campaign: {campaign.get('name', 'Unknown')}\n"
         f"Campaign version: {campaign.get('version', 'Unknown')}\n"
         f"Qualification requirements: {json.dumps(campaign.get('qualification', {}), indent=2)}"
-        if campaign else "No campaign configuration provided — flag report for review."
+        if campaign else (
+            "No campaign configuration selected. Use the universal sales-meeting rubric. "
+            "Do not treat the absence of a campaign as a failure; mark only campaign-specific "
+            "criteria as unknown."
+        )
     )
     return f"""You are a sales meeting analyst for Prime Ad.
 Your job is to produce an evidence-based meeting analysis report.
@@ -243,7 +247,7 @@ Respond in plain text."""
 
 
 def _prompt_qualification(facts: str, campaign: dict) -> str:
-    criteria = json.dumps(campaign.get("qualification", {}).get("requirements", []), indent=2)
+    criteria = json.dumps(campaign.get("qualification", {}).get("requirements", []), indent=2) if campaign else "None — use universal criteria only."
     return f"""Stage 3 — Qualification Assessment
 
 Based on the extracted facts below, assess each qualification criterion.
@@ -255,7 +259,7 @@ Universal criteria:
 3. Decision-making authority or access
 4. Willingness to discuss a paid service
 
-Campaign-specific criteria:
+Campaign-specific criteria (if present; otherwise omit them rather than treating them as a failure):
 {criteria}
 
 Facts:
@@ -276,7 +280,7 @@ Based on the facts extracted from the meeting, score the opener (1–5) on:
 - expectation_setting: Were prospect expectations set appropriately?
 - pre_meeting_capture: Was relevant information recorded before the meeting?
 
-Use "not_assessable" if there is insufficient evidence.
+Score a category whenever the facts or pre-booking notes support a defensible assessment. Use "not_assessable" only when the specific category has no evidence at all.
 Do not penalise the opener for information unavailable before the meeting.
 
 Facts: {facts}
@@ -298,7 +302,7 @@ Also note:
 - conversation_control
 - unanswered_material_questions
 
-Use "not_assessable" if evidence is insufficient.
+Score each category whenever the facts contain direct evidence of that behavior. Use "not_assessable" only when the category truly cannot be evaluated from the transcript. The lack of a saved campaign does not make these general sales behaviors not assessable.
 Do not infer quality from the deal outcome alone.
 
 Facts: {facts}
@@ -361,6 +365,9 @@ management_observations, crm_ready_notes, transcript_quality_notes.
     - agreed_actions is an array of action objects, never an object or string.
     - unanswered_material_questions is an array, never a string.
     Mark any unknown field as "unknown" or "not_assessable". Do not fabricate.
+    If no campaign is supplied, produce a generalized sales-meeting report; do not downgrade
+    general discovery, objection handling, presentation, or closing evidence merely because
+    campaign_id is null. Keep only campaign-specific qualification fields unknown.
     Return ONLY valid JSON."""
 
 
@@ -498,12 +505,21 @@ def _normalize_report_dict(report: dict) -> dict:
     if not isinstance(actions, list):
         actions = []
     report["agreed_actions"] = [
-        item if isinstance(item, dict) else {"description": _as_text(item)}
+        ({**item, "description": item.get("description", item.get("action", "unknown"))}
+         if isinstance(item, dict) else {"description": _as_text(item)})
         for item in actions
     ]
     for key in ("objections", "commercial_terms"):
         if not isinstance(report.get(key), list):
             report[key] = []
+    report["objections"] = [
+        ({
+            **item,
+            "description": item.get("description", item.get("objection", "unknown")),
+            "resolved": bool(item.get("resolved", False)),
+        } if isinstance(item, dict) else {"description": _as_text(item), "resolved": False})
+        for item in report["objections"]
+    ]
     return report
 
 

@@ -31,7 +31,10 @@ class GeminiLLMAdapter(BaseLLMAdapter):
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-            "generationConfig": {"temperature": 0.1},
+            "generationConfig": {
+                "temperature": 0.1,
+                "responseMimeType": "application/json",
+            },
         }
         for attempt in range(3):
             try:
