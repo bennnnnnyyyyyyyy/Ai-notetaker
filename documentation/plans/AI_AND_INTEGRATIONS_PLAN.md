@@ -85,7 +85,7 @@ Before downloading models or implementing complex pipelines, the system hardware
 
 ### Milestone 5 — Controlled Google Sheets Export
 * **Current scope**: Manual, user-triggered export of a meeting/report row to a chosen Google Sheet.
-* OAuth credentials and refresh tokens remain local and Git-ignored.
+* A local service-account JSON is preferred for this single-user prototype; OAuth credentials and refresh tokens remain optional, local, and Git-ignored.
 * No automatic CRM mutations, email, booking, or meeting scheduling are included.
 * Inbound booking webhooks and broader CRM synchronization remain deferred until the local workflow is proven reliable.
 

@@ -1,4 +1,4 @@
-"""Controlled Google Sheets export using a local OAuth desktop credential."""
+"""Controlled Google Sheets export using a local service account or OAuth."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ class GoogleSheetsSetupError(RuntimeError):
 
 
 def get_status() -> dict[str, Any]:
+    service_account_path = Path(settings.google_sheets_service_account_path)
     credentials_path = Path(settings.google_sheets_credentials_path)
     token_path = Path(settings.google_sheets_token_path)
     try:
@@ -30,18 +31,24 @@ def get_status() -> dict[str, Any]:
         detail = "Install the Google Sheets dependencies from requirements.txt."
     elif not configured:
         detail = "Set GOOGLE_SHEETS_SPREADSHEET_ID in .env."
+    elif service_account_path.is_file():
+        detail = "Service account configured; share the target Sheet with its service-account email."
     elif not credentials_path.is_file():
-        detail = f"Place OAuth desktop credentials at {credentials_path}."
+        detail = f"Place a service-account JSON at {service_account_path}, or OAuth credentials at {credentials_path}."
     elif not token_path.is_file():
         detail = "Run scripts/google_sheets_auth.py once to authorize this PC."
     else:
         detail = "Google Sheets export is configured and authorized."
 
-    ready = libraries_ready and configured and credentials_path.is_file() and token_path.is_file()
+    service_account_found = service_account_path.is_file()
+    oauth_ready = credentials_path.is_file() and token_path.is_file()
+    ready = libraries_ready and configured and (service_account_found or oauth_ready)
     return {
         "status": "ready" if ready else "needs_setup",
         "libraries_ready": libraries_ready,
         "spreadsheet_id_configured": configured,
+        "service_account_path": str(service_account_path),
+        "service_account_found": service_account_found,
         "credentials_path": str(credentials_path),
         "credentials_found": credentials_path.is_file(),
         "token_path": str(token_path),
@@ -52,6 +59,16 @@ def get_status() -> dict[str, Any]:
 
 
 def _credentials():
+    service_account_path = Path(settings.google_sheets_service_account_path)
+    if service_account_path.is_file():
+        try:
+            from google.oauth2 import service_account
+        except ImportError as exc:
+            raise GoogleSheetsSetupError("Google Sheets libraries are not installed.") from exc
+        return service_account.Credentials.from_service_account_file(
+            str(service_account_path), scopes=SCOPES
+        )
+
     try:
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials

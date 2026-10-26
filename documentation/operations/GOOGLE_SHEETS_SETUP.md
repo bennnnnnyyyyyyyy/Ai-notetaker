@@ -6,31 +6,32 @@ The first integration is a controlled export, not an autonomous CRM writer. It a
 
 The `Meetings` worksheet receives meeting identity/status, URL, campaign, opener/closer, prospect profile, qualification, outcome, pipeline stage, executive summary, and error information.
 
-## One-time Google setup
+## Preferred setup: service account
 
-1. Create or choose a Google Cloud project.
-2. Enable the Google Sheets API.
-3. Configure the OAuth consent screen for the intended Google account/domain.
-4. Create an OAuth client of type **Desktop app**.
-5. Download the JSON credential and save it at the project root as `credentials.json`.
-6. Put the spreadsheet ID and worksheet name in the ignored `.env` file:
+1. In Google Cloud, enable the Google Sheets API for the project that owns the service account.
+2. Create or use a Google Sheet and copy its ID from the URL. It is the value between `/d/` and `/edit`.
+3. Share that Sheet with the service-account email as **Editor**:
+
+   `test1-898@ainotetakerprimead.iam.gserviceaccount.com`
+
+4. Keep the downloaded service-account JSON in the project directory only as a local secret. It is ignored by Git.
+5. Put the local path and Sheet ID in the ignored `.env` file:
 
    ```text
    GOOGLE_SHEETS_SPREADSHEET_ID=your-spreadsheet-id
    GOOGLE_SHEETS_WORKSHEET=Meetings
+   GOOGLE_SHEETS_SERVICE_ACCOUNT_PATH=C:\\path\\to\\service-account.json
    ```
 
-7. Install dependencies:
+No browser OAuth flow is required for this route. The Sheet must be shared with the service account or Google will reject the export.
 
-   ```powershell
-   py -3 -m pip install -r requirements.txt
-   ```
+## Optional OAuth fallback
 
-8. Authorize the local account once:
+If a service account is not desired, save an OAuth Desktop client JSON as `credentials.json`, set the OAuth paths in `.env`, and run:
 
-   ```powershell
-   py -3 scripts\google_sheets_auth.py
-   ```
+```powershell
+py -3 scripts\google_sheets_auth.py
+```
 
 The refresh token is stored only in `data/google_sheets_token.json`, which is Git-ignored.
 

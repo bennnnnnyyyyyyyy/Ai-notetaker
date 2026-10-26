@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from backend.main import app
+from backend.config import settings
 from backend.schemas.meeting import MeetingCreate
 
 
@@ -40,7 +41,8 @@ def test_campaign_creation_rejects_paths_outside_bundle():
     assert response.status_code == 422
 
 
-def test_google_sheets_status_is_explicitly_unconfigured():
+def test_google_sheets_status_is_explicitly_unconfigured(monkeypatch):
+    monkeypatch.setattr(settings, "google_sheets_spreadsheet_id", "")
     with TestClient(app) as client:
         response = client.get("/api/v1/integrations/google-sheets/status")
     assert response.status_code == 200

@@ -10,7 +10,8 @@ FastAPI backend (backend/main.py)
   ├─ SQLite database (data/app.db)
   ├─ Playwright + FFmpeg capture adapter
   ├─ faster-whisper transcription adapter
-  └─ Ollama local LLM analysis adapter
+  ├─ Ollama local LLM analysis adapter
+  └─ Manual Google Sheets export adapter
               │
               ▼
 Static dashboard (frontend/)

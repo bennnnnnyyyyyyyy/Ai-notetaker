@@ -4,7 +4,7 @@ data/
 # Environment secrets
 .env
 *.env
-
+client_secret_1072176653903-j62e18852f8qan14p35ek7mvc17l8idp.apps.googleusercontent.com.json
 # Python
 __pycache__/
 *.py[cod]
@@ -15,7 +15,9 @@ env/
 *.egg-info/
 dist/
 build/
-
+ainotetakerprimead-d08e702febc3.json
+*service-account*.json
+*service_account*.json
 # Node
 node_modules/
 

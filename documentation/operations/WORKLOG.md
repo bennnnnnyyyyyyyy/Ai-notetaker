@@ -1,5 +1,27 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Add service-account Google Sheets path
+
+**Objective.** Use the supplied Google Cloud service-account JSON for the controlled Sheets export without requiring an interactive OAuth browser flow.
+
+**Actions Completed.** Added service-account credential loading with OAuth fallback, configured the ignored local `.env` to point at the supplied JSON, protected service-account filenames in `.gitignore`, and updated the setup plan, checklist, and operations guide. No private key contents were printed or committed.
+
+**System Result.** The integration can authenticate locally once a target spreadsheet ID is configured and the Sheet is shared with `test1-898@ainotetakerprimead.iam.gserviceaccount.com`. No export was attempted because no spreadsheet ID is configured yet.
+
+**Safety Status.** Credentials remain local and Git-ignored. Export remains manual and user-triggered; no external Sheet was modified.
+
+**Follow-up verification.** Configured the supplied spreadsheet ID, confirmed the service account can read the `AI Notetaker` spreadsheet, and matched the local worksheet setting to its existing `Sheet1` tab. No row was appended.
+
+## 2026-10-26 — Add controlled Google Sheets export
+
+**Objective.** Begin the operations/integration layer without coupling the prototype to an autonomous CRM or paid service.
+
+**Actions Completed.** Added a Google Sheets OAuth adapter, configuration fields, setup/auth script, API status and manual export endpoints, a dashboard export button, dependency declarations, credential/token Git protection, setup documentation, and endpoint tests. The export row carries meeting status, campaign, people, prospect profile, qualification, outcome, pipeline stage, summary, and error information.
+
+**System Result.** The integration is wired and reports `needs_setup` until a Google Cloud OAuth desktop credential, spreadsheet ID, worksheet, and one-time local authorization are supplied. No Google Sheet was modified during implementation.
+
+**Safety Status.** OAuth tokens and credentials are ignored by Git. Export is manual and user-triggered; no email, booking, CRM mutation, or meeting scheduling was added.
+
 ## 2026-10-26 — Add Stop Capture button and URL-based meeting end detection
 
 **Objective.** Ensure meetings end cleanly when a participant leaves the call without requiring browser window closure, and provide explicit manual stop controls on the dashboard.
