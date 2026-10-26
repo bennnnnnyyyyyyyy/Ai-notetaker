@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Apply local browser profile configuration
+
+**Objective.** Resolve the dashboard readiness warning after the user supplied the browser and audio settings.
+
+**Actions Completed.** Confirmed `.env.example` contained the settings but `.env` was missing, so the application was loading an empty browser profile path. Added the ignored local `.env` using the supplied non-secret settings, separated Chrome’s User Data root from the `Default` profile name, and updated Playwright launch arguments and setup documentation.
+
+**System Result.** The application can now load the configured Chrome profile root without copying cookies, credentials, or browser data into the repository.
+
+**Safety Status.** No browser was launched and no credentials were read. A real Meet test remains pending explicit authorization and manual consent.
+
 ## 2026-10-26 — Verify VB-CABLE device path
 
 **Objective.** Set up and verify the virtual audio route required to capture meeting output through DirectShow.

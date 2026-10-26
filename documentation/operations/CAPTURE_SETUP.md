@@ -13,7 +13,7 @@ Current state as of 2026-10-26:
 1. Keep the verified `CABLE Output (VB-Audio Virtual Cable)` device selected as the Windows playback/recording route for the test.
 2. Re-run the dashboard readiness check before the meeting.
 3. Keep `AUDIO_DEVICE_NAME` set to the exact DirectShow device name.
-4. Set `BROWSER_PROFILE_PATH` to the authorized Chrome user-data directory. Do not copy cookies or credentials into the repository.
+4. Set `BROWSER_PROFILE_PATH` to the authorized Chrome `User Data` directory and `BROWSER_PROFILE_NAME` to the profile name, usually `Default`. Do not copy cookies or credentials into the repository.
 5. Start the app, register a meeting, and manually approve any browser permissions/admission prompts.
 6. End the test by closing the visible meeting browser; the capture worker treats that as the local stop signal.
 

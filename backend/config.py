@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Browser
     browser_profile_path: str = ""
+    browser_profile_name: str = "Default"
 
     # Audio capture
     audio_device_name: str = "CABLE Output (VB-Audio Virtual Cable)"

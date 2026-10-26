@@ -87,6 +87,7 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         }
         if settings.browser_profile_path:
             # Use the existing signed-in Chrome profile
+            launch_args.append(f"--profile-directory={settings.browser_profile_name}")
             self._browser = await self._playwright.chromium.launch_persistent_context(
                 user_data_dir=settings.browser_profile_path,
                 headless=False,
