@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Verify VB-CABLE device path
+
+**Objective.** Set up and verify the virtual audio route required to capture meeting output through DirectShow.
+
+**Actions Completed.** Retrieved the official VB-CABLE Driver Pack 45 from VB-Audio and extracted it under the user Downloads folder. The installer itself requires Administrator mode, so no elevated installation was attempted. The system now exposes `CABLE Output (VB-Audio Virtual Cable)` to FFmpeg, and FFmpeg successfully opened that device for one second while discarding the samples.
+
+**System Result.** FFmpeg and the virtual cable device are ready. The remaining capture prerequisite is configuring the authorized browser profile and confirming Windows/Meet playback is routed through CABLE Output during a short authorized test.
+
+**Safety Status.** No meeting was joined and no recording file was created. The one-second device test wrote to `NUL` and discarded audio.
+
 ## 2026-10-26 — Improve capture lifecycle and setup handoff
 
 **Objective.** Continue Milestone 1 after FFmpeg installation by making the visible-browser capture lifecycle stoppable and documenting the exact remaining setup.

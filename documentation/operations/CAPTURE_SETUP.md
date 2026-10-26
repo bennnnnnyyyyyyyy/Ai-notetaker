@@ -4,15 +4,15 @@ Current state as of 2026-10-26:
 
 - Playwright Chromium is installed.
 - Full FFmpeg Essentials is installed locally and DirectShow works.
-- The PC exposes `Microphone (2- Logi USB Headset)`.
-- The configured `CABLE Output (VB-Audio Virtual Cable)` device is not present.
+- The PC exposes `Microphone (2- Logi USB Headset)` and `CABLE Output (VB-Audio Virtual Cable)`.
+- FFmpeg successfully opened the CABLE device for a one-second discard-only test.
 - Chrome is installed and has local profiles, but no profile is configured for this app.
 
 ## To prepare an authorized meeting test
 
-1. Enable a legitimate loopback source in Windows sound settings, such as Stereo Mix, or install/configure VB-Audio Cable according to its documentation.
-2. Re-run the dashboard readiness check and confirm the intended device appears.
-3. Set `AUDIO_DEVICE_NAME` in `.env` to the exact DirectShow device name.
+1. Keep the verified `CABLE Output (VB-Audio Virtual Cable)` device selected as the Windows playback/recording route for the test.
+2. Re-run the dashboard readiness check before the meeting.
+3. Keep `AUDIO_DEVICE_NAME` set to the exact DirectShow device name.
 4. Set `BROWSER_PROFILE_PATH` to the authorized Chrome user-data directory. Do not copy cookies or credentials into the repository.
 5. Start the app, register a meeting, and manually approve any browser permissions/admission prompts.
 6. End the test by closing the visible meeting browser; the capture worker treats that as the local stop signal.

@@ -24,7 +24,7 @@ Static dashboard (frontend/)
 | Persistence | SQLite through `aiosqlite` | Working locally |
 | Dashboard | Plain HTML/CSS/JavaScript served by FastAPI | Working locally |
 | Browser | Playwright visible browser | Scaffolded; real Meet test pending |
-| Audio | FFmpeg DirectShow input configured for a named device | Requires FFmpeg and device verification |
+| Audio | FFmpeg DirectShow input configured for a named device | FFmpeg and CABLE device verified; real meeting routing test pending |
 | Transcription | faster-whisper CPU `base` model | Implemented; model download on first use |
 | Analysis | Ollama `phi3:mini` over localhost HTTP | Implemented; Ollama/model setup pending |
 
