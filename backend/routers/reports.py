@@ -1,9 +1,10 @@
 import uuid
 import json
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 import aiosqlite
 
 from backend.database import get_db
+from backend.auth import require_session
 from backend.schemas.report import ReportResponse, ReportReviewCreate
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -68,8 +69,10 @@ async def analyze_meeting(
 async def submit_review(
     report_id: str,
     body: ReportReviewCreate,
+    request: Request,
     db: aiosqlite.Connection = Depends(get_db),
 ):
+    session = await require_session(request, db)
     async with db.execute(
         "SELECT id FROM reports WHERE id = ?", (report_id,)
     ) as cur:
@@ -86,7 +89,7 @@ async def submit_review(
         (
             review_id,
             report_id,
-            body.reviewer,
+            session["username"],
             body.feedback,
             json.dumps(body.corrections) if body.corrections else None,
         ),

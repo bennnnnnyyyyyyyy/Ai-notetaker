@@ -26,6 +26,7 @@ from typing import Optional
 import aiosqlite
 
 from backend.config import settings
+from backend.auth import public_error_message
 from backend.adapters.base_llm import BaseLLMAdapter
 from backend.adapters.ollama_llm import OllamaLLMAdapter
 from backend.adapters.gemini_llm import GeminiLLMAdapter
@@ -65,7 +66,7 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
         logger.exception("Analysis failed for meeting %s", meeting_id)
         await db.execute(
             "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
-            (str(exc), datetime.utcnow().isoformat(), meeting_id),
+            (public_error_message(exc, "Analysis failed; check the server log and retry."), datetime.utcnow().isoformat(), meeting_id),
         )
         await db.commit()
 

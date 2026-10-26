@@ -24,6 +24,15 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def public_error_message(exc: Exception, default: str = "Operation failed; see the server log for details.") -> str:
+    """Return stable user-facing text without exposing paths or third-party errors."""
+    if isinstance(exc, FileNotFoundError):
+        return "Required local file is unavailable."
+    if isinstance(exc, PermissionError):
+        return "The operation was blocked by a local permission error."
+    return default
+
+
 def hash_password(password: str, iterations: int = PBKDF2_ITERATIONS) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, iterations)

@@ -11,6 +11,7 @@ from backend.adapters.google_sheets import (
     load_report_file,
 )
 from backend.database import get_db
+from backend.auth import public_error_message
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -42,8 +43,8 @@ async def export_meeting_to_google_sheets(
     try:
         updates = await asyncio.to_thread(export_row, build_export_row(dict(meeting), report))
     except GoogleSheetsSetupError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(status_code=503, detail=public_error_message(exc, "Google Sheets integration is not configured.")) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Google Sheets export failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=public_error_message(exc, "Google Sheets export failed; check the server log.")) from exc
 
     return {"status": "exported", "meeting_id": meeting_id, "updates": updates}

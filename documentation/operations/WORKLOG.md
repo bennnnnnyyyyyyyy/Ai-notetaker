@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Apply Phase 2A security-hardening audit fixes
+
+**Objective.** Address the supplied backend security audit before considering any public admin URL.
+
+**Actions Completed.** Added fail-closed deployment validation: non-loopback hosting requires explicit `APP_PUBLIC=true`, `APP_HTTPS=true`, and `ADMIN_SECURE_COOKIES=true`. Added a regression test against actual `Set-Cookie` headers. Redacted executable paths, browser profile paths, and enumerated audio-device names from readiness API responses. Added stable user-facing error messages while retaining detailed exceptions in server logs. Review submissions now derive the reviewer from the authenticated session instead of trusting the request body. Added regression coverage for readiness redaction and insecure public configuration.
+
+**System Result.** Backend compile/import checks pass and the test suite passes: 11 tests. The application remains loopback-only by default. No tunnel, proxy, public URL, calendar integration, or unattended job system was enabled.
+
+**Safety Status.** Secure cookies are still optional for local HTTP because the current deployment is loopback-only. Any attempted public/non-loopback configuration now fails closed unless HTTPS and secure-cookie settings are explicit. Durable jobs, shared rate limiting, trusted proxy policy, and remote deployment remain intentionally unimplemented.
+
 ## 2026-10-26 — Configure temporary local admin credentials
 
 **Objective.** Enable access to the protected local dashboard for supervised testing.

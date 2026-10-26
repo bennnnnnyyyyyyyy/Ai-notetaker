@@ -18,6 +18,7 @@ from pathlib import Path
 import aiosqlite
 
 from backend.config import settings
+from backend.auth import public_error_message
 from backend.adapters.faster_whisper_transcriber import FasterWhisperTranscriber
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,6 @@ async def run_transcription(
         logger.exception("Transcription failed for meeting %s", meeting_id)
         await db.execute(
             "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
-            (str(exc), datetime.utcnow().isoformat(), meeting_id),
+            (public_error_message(exc, "Transcription failed; check the server log and retry."), datetime.utcnow().isoformat(), meeting_id),
         )
         await db.commit()

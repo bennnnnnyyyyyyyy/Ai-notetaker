@@ -33,9 +33,7 @@ def _audio_device_check(ffmpeg: str | None) -> dict:
     matched = any(configured.lower() in line.lower() for line in audio_lines)
     return {
         "status": "ready" if matched else "needs_setup",
-        "configured_device": configured,
         "configured_device_found": matched,
-        "audio_devices": audio_lines,
         "detail": "Configured audio device found." if matched else "Configured audio device was not found.",
     }
 
@@ -59,7 +57,6 @@ def _browser_profile_check(profile: Path | None) -> dict:
     signed_in = any(candidate.is_file() for candidate in cookie_candidates)
     return {
         "status": "ready" if signed_in else "needs_setup",
-        "profile_dir": str(profile),
         "detail": (
             "Capture profile is ready."
             if signed_in
@@ -88,13 +85,10 @@ async def get_readiness() -> dict:
         "python": {"status": "ready", "version": platform.python_version()},
         "playwright_chromium": {
             "status": "ready" if chromium_available else "blocked",
-            "executable": chromium_path,
             "detail": chromium_error or ("Playwright Chromium is installed." if chromium_available else "Playwright is installed, but its Chromium executable is missing. Run: py -3 -m playwright install chromium"),
         },
         "ffmpeg": {
             "status": "ready" if ffmpeg else "blocked",
-            "configured_path": settings.ffmpeg_path,
-            "resolved_path": ffmpeg,
             "detail": "FFmpeg is available." if ffmpeg else "Install FFmpeg or set FFMPEG_PATH to ffmpeg.exe.",
         },
         "browser_profile": _browser_profile_check(profile),

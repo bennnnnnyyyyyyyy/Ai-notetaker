@@ -1,4 +1,5 @@
 import shutil
+import ipaddress
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,6 +17,8 @@ class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     app_debug: bool = False
+    app_public: bool = False
+    app_https: bool = False
     admin_username: str = "admin"
     admin_password_hash: str = ""
     admin_session_ttl_seconds: int = 28800
@@ -77,6 +80,17 @@ class Settings(BaseSettings):
             self.database_path.parent,
         ):
             Path(d).mkdir(parents=True, exist_ok=True)
+
+    def validate_security_config(self) -> None:
+        """Fail closed before a non-loopback deployment can start insecurely."""
+        try:
+            is_loopback = ipaddress.ip_address(self.app_host).is_loopback
+        except ValueError:
+            is_loopback = self.app_host.lower() in {"localhost", "localhost.localdomain"}
+        if not is_loopback and not self.app_public:
+            raise RuntimeError("Non-loopback APP_HOST requires APP_PUBLIC=true and an explicit HTTPS deployment.")
+        if self.app_public and (not self.app_https or not self.admin_secure_cookies):
+            raise RuntimeError("Public deployment requires APP_HTTPS=true and ADMIN_SECURE_COOKIES=true.")
 
     def resolve_ffmpeg_path(self) -> str | None:
         """Resolve a full FFmpeg build; Playwright's helper lacks DirectShow."""

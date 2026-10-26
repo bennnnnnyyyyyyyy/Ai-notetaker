@@ -79,9 +79,11 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - No full-length production transcript or analysis report has been validated from a meeting. The isolated 45-second real-recording test is persisted and verified.
 - The eight-stage analysis pipeline remains intentionally unrun for this milestone.
 - Phase 2A local admin security boundary is implemented: protected API routes, server-side sessions, CSRF checks, rate-limited login, logout, and audit events. No public tunnel or remote deployment is enabled.
+- Phase 2A hardening now fails closed for non-loopback/public configuration without explicit HTTPS and secure cookies, redacts local paths from readiness responses, sanitizes user-facing worker/integration errors, and derives review identity from the authenticated session. Eleven backend tests pass.
 - Ollama model availability and full CPU processing time remain unverified.
 - A bounded local Ollama call previously returned in 70.84 seconds, but that does not prove the full pipeline is usable.
 - Speaker diarization is not implemented.
+- Public deployment remains blocked pending a real HTTPS boundary, trusted proxy policy, shared/durable rate limiting, durable jobs, and supervised remote-access testing.
 
 ## Next action: supervised capture test
 

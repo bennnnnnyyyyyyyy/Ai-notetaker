@@ -30,6 +30,10 @@ def test_health_and_readiness_endpoints(admin_client):
     assert set(response.json()["checks"]) == {
         "python", "playwright_chromium", "ffmpeg", "browser_profile", "audio"
     }
+    readiness_text = response.text
+    assert "resolved_path" not in readiness_text
+    assert "profile_dir" not in readiness_text
+    assert "audio_devices" not in readiness_text
 
 
 def test_sensitive_routes_require_authentication(monkeypatch):
@@ -73,6 +77,29 @@ def test_login_csrf_and_logout(admin_client):
     assert response.status_code == 422
     assert admin_client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": csrf_cookie}).status_code == 200
     assert admin_client.get("/api/v1/meetings").status_code == 401
+
+
+def test_secure_cookie_attribute_is_emitted_when_enabled(monkeypatch):
+    monkeypatch.setattr(settings, "admin_username", "admin")
+    monkeypatch.setattr(settings, "admin_password_hash", hash_password("correct-password"))
+    monkeypatch.setattr(settings, "admin_secure_cookies", True)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin", "password": "correct-password"},
+        )
+    cookies = response.headers.get_list("set-cookie")
+    assert any("ai_admin_session=" in value and "Secure" in value and "HttpOnly" in value for value in cookies)
+    assert any("ai_admin_csrf=" in value and "Secure" in value and "HttpOnly" not in value for value in cookies)
+
+
+def test_public_security_configuration_fails_closed(monkeypatch):
+    monkeypatch.setattr(settings, "app_host", "0.0.0.0")
+    monkeypatch.setattr(settings, "app_public", True)
+    monkeypatch.setattr(settings, "app_https", False)
+    monkeypatch.setattr(settings, "admin_secure_cookies", False)
+    with pytest.raises(RuntimeError, match="Public deployment requires"):
+        settings.validate_security_config()
 
 
 def test_meeting_url_requires_https_google_meet():

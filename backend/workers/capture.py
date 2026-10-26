@@ -19,6 +19,7 @@ from typing import Optional
 import aiosqlite
 
 from backend.config import settings
+from backend.auth import public_error_message
 from backend.adapters.playwright_capture import PlaywrightCaptureAdapter
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,6 @@ async def run_capture(meeting_id: str) -> None:
             partial = Path(adapter._recording_path) if adapter._recording_path else None
             if partial and partial.exists() and partial.stat().st_size == 0:
                 partial.unlink()
-            await _set_status(db, meeting_id, "failed", error=str(exc))
+            await _set_status(db, meeting_id, "failed", error=public_error_message(exc, "Capture failed; check the server log and retry."))
         finally:
             _active_captures.pop(meeting_id, None)

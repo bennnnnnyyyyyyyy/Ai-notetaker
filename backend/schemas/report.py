@@ -150,6 +150,6 @@ class ReportResponse(BaseModel):
 
 
 class ReportReviewCreate(BaseModel):
-    reviewer: str
+    reviewer: Optional[str] = None
     feedback: Optional[str] = None
     corrections: Optional[dict] = None
