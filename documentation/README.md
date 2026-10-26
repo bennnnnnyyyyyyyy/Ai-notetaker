@@ -26,3 +26,5 @@ This is the canonical documentation index. Keep the code folders focused on code
 - [Plan checklist](plans/checklist.md)
 - [Worklog](operations/WORKLOG.md)
 - [Initial review](reviews/INITIAL_REVIEW.md)
+- [Phase 1 completion record](operations/PHASE_1_COMPLETE.md)
+- [Phase 2 plan](plans/PHASE_2_PLAN.md)

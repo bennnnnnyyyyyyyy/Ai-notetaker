@@ -41,3 +41,6 @@ Only after the entire local pipeline is proven and stable:
 - Outbound CRM report dispatchers.
 - No external automated actions (emails, CRM updates, booking) in the baseline version.
 
+## Phase 2 — Secure Admin, Calendar Discovery, and Controlled Operations
+
+The next phase is defined in [`PHASE_2_PLAN.md`](PHASE_2_PLAN.md). It adds an authenticated HTTPS admin surface, read-only shared-calendar discovery, policy-controlled Meet capture, durable jobs, and explicit evidence-based analysis. Calendar visibility may authorize discovery, but Google authentication, admission, and recording consent remain authoritative.

@@ -15,3 +15,12 @@ Last updated: 2026-10-26
 - `[x]` means verified in this repository or by a recorded local test.
 - `🟡` means partial implementation exists but an important real-world test remains.
 - `📋` means planned and not implemented.
+
+## Phase 2 target gates
+
+| Gate | Status | Evidence |
+|---|---|---|
+| 2A. Secure authenticated admin shell | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
+| 2B. Read-only shared-calendar discovery | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
+| 2C. Controlled scheduled capture | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
+| 2D. Evidence-linked intelligence and reviewed export | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
