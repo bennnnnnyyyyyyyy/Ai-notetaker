@@ -80,7 +80,9 @@ function renderMeetingDetail(meeting) {
     <div style="display:flex;gap:.75rem;margin-top:.5rem;">
       ${isStartable ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
       ${isCancellable ? `<button class="btn-danger" id="stop-${meeting.id}">Stop capture</button>` : ''}
+      <button class="btn-secondary" id="export-sheet-${meeting.id}" type="button">Export to Google Sheets</button>
     </div>
+    <p id="export-result-${meeting.id}" class="muted" role="status" aria-live="polite"></p>
   </div>`;
 }
 
@@ -100,6 +102,20 @@ function bindMeetingActions(meeting) {
     await api(`/meetings/${meeting.id}/stop-capture`, { method: 'POST' });
     await loadMeetings();
     await openMeeting(meeting.id);
+  };
+  const exportButton = $(`export-sheet-${meeting.id}`);
+  if (exportButton) exportButton.onclick = async () => {
+    const result = $(`export-result-${meeting.id}`);
+    exportButton.disabled = true;
+    result.textContent = 'Exporting…';
+    try {
+      await api(`/integrations/google-sheets/meetings/${meeting.id}/export`, { method: 'POST' });
+      result.textContent = 'Exported to Google Sheets.';
+    } catch (error) {
+      result.textContent = error.message;
+    } finally {
+      exportButton.disabled = false;
+    }
   };
 }
 

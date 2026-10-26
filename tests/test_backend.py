@@ -38,3 +38,10 @@ def test_campaign_creation_rejects_paths_outside_bundle():
             },
         )
     assert response.status_code == 422
+
+
+def test_google_sheets_status_is_explicitly_unconfigured():
+    with TestClient(app) as client:
+        response = client.get("/api/v1/integrations/google-sheets/status")
+    assert response.status_code == 200
+    assert response.json()["status"] == "needs_setup"

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from backend.config import settings
 from backend.database import init_db
-from backend.routers import meetings, reports, campaigns, system
+from backend.routers import meetings, reports, campaigns, system, integrations
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -55,6 +55,7 @@ app.include_router(meetings.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
 app.include_router(campaigns.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
+app.include_router(integrations.router, prefix="/api/v1")
 
 # Serve frontend static files
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"

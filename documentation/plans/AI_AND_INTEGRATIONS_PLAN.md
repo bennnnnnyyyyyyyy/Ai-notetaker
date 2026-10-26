@@ -83,9 +83,11 @@ Before downloading models or implementing complex pipelines, the system hardware
   2. Opener and Closer scorecard review.
   3. Form for human corrections, reviewer notes, and status advancement.
 
-### Milestone 5 — Deferred External Integrations
-* **Policy**: External automation is strictly deferred.
-* Inbound booking webhooks (Cal.com / Zapier / Activepieces) and outbound CRM synchronizations will only be introduced once the local capture, transcription, and report generation workflow has been proven reliable.
+### Milestone 5 — Controlled Google Sheets Export
+* **Current scope**: Manual, user-triggered export of a meeting/report row to a chosen Google Sheet.
+* OAuth credentials and refresh tokens remain local and Git-ignored.
+* No automatic CRM mutations, email, booking, or meeting scheduling are included.
+* Inbound booking webhooks and broader CRM synchronization remain deferred until the local workflow is proven reliable.
 
 ---
 

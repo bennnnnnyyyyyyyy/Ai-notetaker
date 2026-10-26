@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     ollama_model: str = "phi3:mini"
     ollama_chunk_tokens: int = 3000
 
+    # Google Sheets export
+    google_sheets_spreadsheet_id: str = ""
+    google_sheets_worksheet: str = "Meetings"
+    google_sheets_credentials_path: Path = PROJECT_ROOT / "credentials.json"
+    google_sheets_token_path: Path = PROJECT_ROOT / "data/google_sheets_token.json"
+
     # Optional paid adapters (empty = disabled)
     openai_api_key: str = ""
     recall_ai_api_key: str = ""

@@ -29,3 +29,9 @@ Thumbs.db
 
 # Browser profiles referenced by the app
 browser_profiles/
+
+# Google API credentials/tokens
+credentials.json
+client_secret*.json
+token.json
+data/google_sheets_token.json

@@ -43,8 +43,19 @@ class FasterWhisperTranscriber(BaseTranscriber):
         model = _get_model()
         logger.info("Transcribing %s with model '%s'", audio_path, settings.whisper_model)
 
+        import wave
+        import numpy as np
+
+        try:
+            with wave.open(audio_path, "rb") as wf:
+                frames = wf.readframes(wf.getnframes())
+                audio_input = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+        except Exception as exc:
+            logger.warning("Could not read WAV via wave module (%s); falling back to file path", exc)
+            audio_input = audio_path
+
         segments, info = model.transcribe(
-            audio_path,
+            audio_input,
             beam_size=5,
             language="en",
             vad_filter=True,

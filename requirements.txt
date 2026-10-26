@@ -32,3 +32,8 @@ python-multipart==0.0.17
 pytest==8.3.3
 pytest-asyncio==0.24.0
 httpx  # also used as async test client
+
+# Google Sheets export (OAuth desktop application)
+google-api-python-client==2.154.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
