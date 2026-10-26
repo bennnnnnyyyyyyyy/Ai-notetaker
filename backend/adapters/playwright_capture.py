@@ -125,20 +125,22 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 "wait a few seconds, and retry the capture."
             ) from exc
 
-        logger.info("Navigating to %s", meeting_url)
-        # `domcontentloaded` can wait indefinitely on Meet's application shell
-        # and leave the user staring at about:blank. `commit` confirms that the
-        # navigation started; Meet can continue loading in the visible browser.
-        try:
-            response = await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
-            logger.info("Meet navigation committed: url=%s status=%s", self._page.url, response.status if response else "unknown")
-            await asyncio.sleep(2)
-        except PlaywrightError as exc:
-            self._status = "failed"
-            raise RuntimeError(
-                f"Meet navigation failed. Check the URL and network connection. "
-                f"Details: {exc}"
-            ) from exc
+        logger.info("Navigating capture tab to %s", meeting_url)
+        # Fire navigation as a background task so we are not blocked waiting
+        # for Google Meet's auth redirects or slow application-shell load.
+        # Chrome will continue loading the URL visibly; the user joins manually.
+        async def _navigate():
+            try:
+                await self._page.goto(meeting_url, wait_until="commit", timeout=60_000)
+                logger.info("Meet navigation committed: url=%s", self._page.url)
+            except PlaywrightError as exc:
+                logger.warning("Meet navigation error (non-fatal, browser still open): %s", exc)
+
+        asyncio.create_task(_navigate())
+        # Give Chrome a moment to pick up the navigation request before we
+        # check FFmpeg health and return. The tab will load in the background.
+        await asyncio.sleep(3)
+        logger.info("Navigation fired; current tab url=%s", self._page.url)
 
         # Detect an invalid device or an FFmpeg startup failure immediately.
         await asyncio.sleep(0.5)

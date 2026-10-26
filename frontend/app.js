@@ -92,6 +92,15 @@ document.addEventListener('click', (event) => {
 
 $('back-btn').onclick = () => showView('meetings');
 $('refresh-readiness').onclick = () => loadReadiness().catch((error) => { $('readiness').textContent = error.message; });
+$('setup-browser-btn').onclick = async () => {
+  $('readiness').textContent = 'Opening Chrome with capture profile…';
+  try {
+    const result = await api('/system/setup-browser', { method: 'POST' });
+    $('readiness').textContent = result.detail;
+  } catch (error) {
+    $('readiness').textContent = error.message;
+  }
+};
 $('new-meeting-form').onsubmit = async (event) => {
   event.preventDefault(); $('form-error').classList.add('hidden');
   const scheduled = $('f-scheduled').value;

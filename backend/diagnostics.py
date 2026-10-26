@@ -39,6 +39,28 @@ def _audio_device_check(ffmpeg: str | None) -> dict:
         "detail": "Configured audio device found." if matched else "Configured audio device was not found.",
     }
 
+def _browser_profile_check(profile: Path | None) -> dict:
+    if not profile or not profile.is_dir():
+        return {
+            "status": "needs_setup",
+            "detail": (
+                "Capture profile not set up yet. "
+                "Click 'Setup capture browser' on the dashboard to sign in once."
+            ),
+        }
+    # Proxy for a completed Google sign-in: the Cookies file exists in Default/.
+    cookies = profile / "Default" / "Cookies"
+    signed_in = cookies.is_file()
+    return {
+        "status": "ready" if signed_in else "needs_setup",
+        "profile_dir": str(profile),
+        "detail": (
+            "Capture profile is ready."
+            if signed_in
+            else "Profile folder exists but no Google session found. "
+                 "Click 'Setup capture browser' to sign in."
+        ),
+    }
 
 async def get_readiness() -> dict:
     """Return safe, local-only checks without starting a browser or recording."""
@@ -69,12 +91,7 @@ async def get_readiness() -> dict:
             "resolved_path": ffmpeg,
             "detail": "FFmpeg is available." if ffmpeg else "Install FFmpeg or set FFMPEG_PATH to ffmpeg.exe.",
         },
-        "browser_profile": {
-            "status": "ready" if profile and profile.is_dir() else "needs_setup",
-            "configured": bool(profile),
-            "exists": bool(profile and profile.is_dir()),
-            "detail": "A browser profile path is configured." if profile and profile.is_dir() else "Set BROWSER_PROFILE_PATH to an authorized browser profile before a real Meet test.",
-        },
+        "browser_profile": _browser_profile_check(profile),
         "audio": _audio_device_check(ffmpeg),
     }
     ready = all(check["status"] == "ready" for check in checks.values())
