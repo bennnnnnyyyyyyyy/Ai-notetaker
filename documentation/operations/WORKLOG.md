@@ -1,5 +1,35 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Configure temporary local admin credentials
+
+**Objective.** Enable access to the protected local dashboard for supervised testing.
+
+**Actions Completed.** Configured the requested temporary local username and password as `admin` / `admin`, verified the PBKDF2 hash against the password, and fixed `scripts/create_admin_password.py` so it can be run directly from the repository root.
+
+**System Result.** The local admin login configuration is valid. The backend must be restarted before the browser can use the new settings.
+
+**Safety Status.** These credentials are intentionally temporary and weak. The application remains loopback-only; change them before enabling any tunnel, public URL, or internet-facing deployment.
+
+## 2026-10-26 — Complete Gemini report-contract fix and isolated verification
+
+**Objective.** Make the Gemini-generated report conform to the existing validated report contract and verify persistence without enabling provider fallback.
+
+**Actions Completed.** Added strict type instructions to the consolidation prompt and a narrow normalization layer for known model variations: nested prose fields, wrapped qualification status, alternate criterion IDs, string scorecard values, and non-list action/question fields. Added bounded retries for transient Gemini 429/5xx responses. Fixed successful analysis to clear stale meeting error messages.
+
+**System Result.** Re-ran the isolated `full-pipeline-audio-test` with Gemini only and `gemini-flash-lite-latest`. The run completed in approximately 54 seconds, produced one validated report, and persisted it to SQLite. The meeting status is `completed`; report status is `validated`; report count is 1. OpenRouter was not called.
+
+**Safety Status.** The test used the isolated database and the explicitly supplied transcript. No production meeting record, Google Sheet, or OpenRouter request was changed.
+
+## 2026-10-26 — Run full analysis with Gemini only
+
+**Objective.** Test the complete evidence-based analysis pipeline with Gemini as the selected provider and confirm that OpenRouter is not used as an implicit fallback.
+
+**Actions Completed.** Ran the full eight-stage worker against the isolated persisted transcript and test SQLite database with `LLM_PROVIDER=gemini` and `gemini-flash-lite-latest`. The first request returned a transient HTTP 503; a direct retry succeeded, and the complete pipeline then finished its model calls in approximately 168 seconds. OpenRouter was not selected or called.
+
+**System Result.** Gemini generated a response, but the final JSON did not conform to the existing `Report` Pydantic schema: several scalar fields were objects, qualification criteria used different field names, scorecard values were strings instead of scorecard objects, and action fields had the wrong shape. Pydantic correctly rejected the report, so no report row was persisted and the isolated meeting remained `failed`. This is now a report-contract normalization/schema-constrained-output issue, not a Gemini connectivity issue.
+
+**Safety Status.** The transcript was sent to Gemini for this explicitly requested test. It remained in the isolated test database; OpenRouter was not used. No production meeting record or Google Sheet was changed.
+
 ## 2026-10-26 — Add and verify OpenRouter provider
 
 **Objective.** Add OpenRouter as an alternative hosted analysis provider using the user-configured key and free-model routing.

@@ -55,7 +55,7 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
         report_json = await _run_pipeline(meeting, transcript, campaign)
         await _save_report(meeting_id, report_json, campaign, db)
         await db.execute(
-            "UPDATE meetings SET status = 'completed', updated_at = ? WHERE id = ?",
+            "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
             (datetime.utcnow().isoformat(), meeting_id),
         )
         await db.commit()
@@ -155,7 +155,7 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
     raw_report = await _generate(llm, system_base, final_prompt)
 
     # Stage 8 — extract and validate JSON
-    report_dict = _extract_json(raw_report)
+    report_dict = _normalize_report_dict(_extract_json(raw_report))
     report_dict["meeting_id"] = meeting["id"]
     report_dict["campaign_id"] = meeting.get("campaign_id")
     report_dict["campaign_config_version"] = campaign.get("version")
@@ -349,8 +349,18 @@ qualification_criteria, opener_performance, closer_scorecard, objections,
 commercial_terms, outcome, pipeline_stage, agreed_actions,
 management_observations, crm_ready_notes, transcript_quality_notes.
 
-Mark any unknown field as "unknown" or "not_assessable". Do not fabricate.
-Return ONLY valid JSON."""
+    Follow these exact types:
+    - transcript_quality_notes, meeting_overview, executive_summary, management_observations,
+      and crm_ready_notes are strings, not objects.
+    - qualification_status is one of the exact allowed status strings, not an object.
+    - each qualification_criteria item uses criterion_id, description, status (met|unmet|unknown),
+      and optional evidence.
+    - every opener_performance and closer_scorecard category is an object with score and evidence.
+      Use score "Not assessable" and evidence "unknown" when evidence is insufficient.
+    - agreed_actions is an array of action objects, never an object or string.
+    - unanswered_material_questions is an array, never a string.
+    Mark any unknown field as "unknown" or "not_assessable". Do not fabricate.
+    Return ONLY valid JSON."""
 
 
 # ---------------------------------------------------------------------------
@@ -392,6 +402,108 @@ def _extract_json(text: str) -> dict:
     if start == -1 or end == 0:
         raise ValueError(f"No JSON object found in LLM response:\n{text[:500]}")
     return json.loads(text[start:end])
+
+
+def _as_text(value, default: str = "unknown") -> str:
+    """Keep report prose fields scalar when a model returns a nested object."""
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return str(value)
+
+
+def _normalize_scorecard(value, fields: list[str]) -> dict:
+    value = value if isinstance(value, dict) else {}
+    normalized = {}
+    for field in fields:
+        item = value.get(field)
+        if isinstance(item, dict):
+            score = item.get("score", item.get("rating", "Not assessable"))
+            evidence = item.get("evidence", item.get("segment_id", "unknown"))
+            notes = item.get("notes")
+        else:
+            score = item if item is not None else "Not assessable"
+            evidence = "unknown"
+            notes = None
+        if isinstance(score, str) and score.lower().replace("_", " ") in {
+            "not assessable", "unknown", "unassessable"
+        }:
+            score = "Not assessable"
+        elif score not in {1, 2, 3, 4, 5, "Not assessable"}:
+            score = "Not assessable"
+        normalized[field] = {
+            "score": score,
+            "evidence": _as_text(evidence),
+            "notes": _as_text(notes, "") if notes is not None else None,
+        }
+    return normalized
+
+
+def _normalize_report_dict(report: dict) -> dict:
+    """Normalize common model shape variations into the canonical Report contract."""
+    report = dict(report)
+    report["transcript_quality_notes"] = _as_text(report.get("transcript_quality_notes"), "unknown")
+    report["meeting_overview"] = _as_text(report.get("meeting_overview"))
+    report["executive_summary"] = _as_text(report.get("executive_summary"))
+    report["management_observations"] = _as_text(report.get("management_observations"), "unknown")
+    report["crm_ready_notes"] = _as_text(report.get("crm_ready_notes"), "unknown")
+
+    qualification_status = report.get("qualification_status", "Insufficient information")
+    if isinstance(qualification_status, dict):
+        qualification_status = qualification_status.get("status", "Insufficient information")
+    if qualification_status == "not_assessable":
+        qualification_status = "Insufficient information"
+    report["qualification_status"] = qualification_status
+
+    criteria = report.get("qualification_criteria", [])
+    if not isinstance(criteria, list):
+        criteria = []
+    normalized_criteria = []
+    for item in criteria:
+        if not isinstance(item, dict):
+            continue
+        criterion_id = item.get("criterion_id", item.get("id", "unknown"))
+        normalized_criteria.append({
+            "criterion_id": _as_text(criterion_id),
+            "description": _as_text(item.get("description", criterion_id)),
+            "status": item.get("status", "unknown") if item.get("status") in {"met", "unmet", "unknown"} else "unknown",
+            "evidence": item.get("evidence"),
+        })
+    report["qualification_criteria"] = normalized_criteria
+
+    source_opener = report.get("opener_performance")
+    source_closer = report.get("closer_scorecard")
+    report["opener_performance"] = _normalize_scorecard(
+        source_opener,
+        ["booking_quality", "information_accuracy", "expectation_setting", "pre_meeting_capture"],
+    )
+    report["closer_scorecard"] = _normalize_scorecard(
+        source_closer,
+        ["discovery", "presentation", "objection_handling", "qualification", "closing_effectiveness"],
+    )
+    closer = report["closer_scorecard"]
+    if isinstance(source_closer, dict):
+        closer["conversation_control"] = _as_text(source_closer.get("conversation_control"), "unknown")
+        questions = source_closer.get("unanswered_material_questions", [])
+        closer["unanswered_material_questions"] = questions if isinstance(questions, list) else []
+        closer["overall_notes"] = _as_text(source_closer.get("overall_notes"), "unknown")
+
+    actions = report.get("agreed_actions", [])
+    if isinstance(actions, dict):
+        actions = actions.get("explicit_commitments", actions.get("actions", []))
+    if not isinstance(actions, list):
+        actions = []
+    report["agreed_actions"] = [
+        item if isinstance(item, dict) else {"description": _as_text(item)}
+        for item in actions
+    ]
+    for key in ("objections", "commercial_terms"):
+        if not isinstance(report.get(key), list):
+            report[key] = []
+    return report
 
 
 # ---------------------------------------------------------------------------

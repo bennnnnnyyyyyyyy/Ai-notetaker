@@ -1,6 +1,11 @@
 """Generate a PBKDF2 admin password hash without printing the password."""
 
 import getpass
+import sys
+from pathlib import Path
+
+# Allow `py -3 scripts\create_admin_password.py` from the repository root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.auth import hash_password
 

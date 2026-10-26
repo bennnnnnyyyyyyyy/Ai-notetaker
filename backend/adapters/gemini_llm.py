@@ -5,6 +5,7 @@ the local environment and are never included in logs or error messages.
 """
 
 import logging
+import time
 
 import httpx
 
@@ -32,26 +33,35 @@ class GeminiLLMAdapter(BaseLLMAdapter):
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
             "generationConfig": {"temperature": 0.1},
         }
-        try:
-            response = httpx.post(
-                self._url(),
-                params={"key": self._api_key},
-                json=payload,
-                timeout=settings.gemini_timeout_seconds,
-            )
-            response.raise_for_status()
-            data = response.json()
-            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-            text = "".join(part.get("text", "") for part in parts).strip()
-            if not text:
-                raise RuntimeError("Gemini returned no text")
-            return text
-        except httpx.HTTPStatusError as exc:
-            logger.error("Gemini request failed with HTTP %s", exc.response.status_code)
-            raise RuntimeError(f"Gemini request failed with HTTP {exc.response.status_code}") from None
-        except httpx.HTTPError as exc:
-            logger.error("Gemini request failed: %s", type(exc).__name__)
-            raise RuntimeError("Gemini request failed; check connectivity and API configuration") from None
+        for attempt in range(3):
+            try:
+                return self._generate_once(payload)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code not in {429, 500, 502, 503, 504} or attempt == 2:
+                    logger.error("Gemini request failed with HTTP %s", exc.response.status_code)
+                    raise RuntimeError(f"Gemini request failed with HTTP {exc.response.status_code}") from None
+                logger.warning("Gemini temporary HTTP %s; retrying attempt %d/3", exc.response.status_code, attempt + 2)
+                time.sleep(2 ** attempt)
+            except httpx.HTTPError:
+                if attempt == 2:
+                    logger.error("Gemini request failed")
+                    raise RuntimeError("Gemini request failed; check connectivity and API configuration") from None
+                time.sleep(2 ** attempt)
+
+    def _generate_once(self, payload: dict) -> str:
+        response = httpx.post(
+            self._url(),
+            params={"key": self._api_key},
+            json=payload,
+            timeout=settings.gemini_timeout_seconds,
+        )
+        response.raise_for_status()
+        data = response.json()
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        text = "".join(part.get("text", "") for part in parts).strip()
+        if not text:
+            raise RuntimeError("Gemini returned no text")
+        return text
 
     def is_available(self) -> bool:
         return bool(self._api_key and self._model)
