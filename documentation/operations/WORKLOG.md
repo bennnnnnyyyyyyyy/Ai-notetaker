@@ -1,5 +1,55 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Add and verify OpenRouter provider
+
+**Objective.** Add OpenRouter as an alternative hosted analysis provider using the user-configured key and free-model routing.
+
+**Actions Completed.** Added an opt-in OpenRouter adapter using the documented `/api/v1/chat/completions` endpoint, configuration, provider selection, and secret-safe error handling. Queried the authenticated model catalogue successfully and selected `openrouter/free` as the default OpenRouter model so routing can choose an available free model. Ran a non-sensitive smoke test with `LLM_PROVIDER=openrouter`; it returned `READY` in approximately 37 seconds.
+
+**System Result.** OpenRouter text generation is verified for a small request. The project remains configured for Gemini unless `LLM_PROVIDER=openrouter` is set. No meeting transcript or audio was sent to OpenRouter.
+
+**Safety Status.** The OpenRouter key remains local in `.env` and was not printed or committed. Hosted provider use remains opt-in and must be treated as external processing of any transcript.
+
+## 2026-10-26 — Verify rotated Gemini key and fallback model
+
+**Objective.** Re-test Gemini after the previously exposed key was revoked and rotated.
+
+**Actions Completed.** Confirmed a replacement key is present without printing its value. The recommended `gemini-3.8-flash` request did not return within the configured timeout, and `gemini-3.1-flash-lite` returned HTTP 503. Tested the current `gemini-flash-lite-latest` fallback with a non-sensitive prompt; it returned `READY` successfully in under five seconds. Set that lighter model as the safe default.
+
+**System Result.** Gemini text generation is now verified for a small request. The meeting transcript has not yet been sent to Gemini. The next test can use the saved transcript with the explicit understanding that its text leaves the PC.
+
+**Safety Status.** The previous key was revoked and rotated by the user. The new key remains local in `.env`; no key value was printed or committed.
+
+## 2026-10-26 — Add and smoke-test opt-in Gemini adapter
+
+**Objective.** Add a provider-controlled Gemini analysis option after the full local Ollama pipeline proved too slow.
+
+**Actions Completed.** Added `GeminiLLMAdapter` using the existing `httpx` dependency, configuration for `LLM_PROVIDER`, model, endpoint, and timeout, and provider selection in the analysis worker. The local environment was set to `LLM_PROVIDER=gemini`. A model-list request succeeded, confirming the API key is being read and Google API access is reachable. The initial `gemini-2.5-flash` request returned 404 because that model is unavailable to this new project; the configured default was updated to the currently listed `gemini-3.8-flash` model. A non-sensitive generation smoke test then timed out after 120 seconds.
+
+**System Result.** Gemini integration is implemented but not verified for successful generation. No meeting transcript or audio was sent to Gemini. The 10-minute transcript remains local and has not been analyzed externally.
+
+**Safety Status.** The first failed traceback included the API request URL, so the configured key should be revoked/rotated before further testing. The adapter now suppresses chained HTTP exceptions so future errors cannot print request URLs or keys.
+
+## 2026-10-26 — Transcribe supplied OGG recording
+
+**Objective.** Transcribe the user-supplied OGG recording with the existing local faster-whisper path.
+
+**Actions Completed.** Confirmed the source file was present and approximately 9:59.72 long. The installed PyAV version could not decode OGG through the current faster-whisper path, so the existing FFmpeg essentials archive was used from a temporary directory to create a temporary 16 kHz mono WAV copy. Ran the configured `base` model with CPU `int8` inference and saved both timestamped JSON and readable text outputs under the ignored transcript directory.
+
+**System Result.** Transcription completed in 110.254 seconds and produced 191 non-empty timestamped segments. Validation found no invalid segment timestamps; the first segment starts at 2.19 seconds and the final segment ends at 599.72 seconds. The original OGG was not modified.
+
+**Safety Status.** Audio and transcript outputs remain local and ignored by Git. No external AI service or analysis pipeline was used.
+
+## 2026-10-26 — Evaluate hosted AI fallback after full local analysis test
+
+**Objective.** Determine whether the current PC can complete the evidence-based analysis pipeline locally and identify a zero-cost hosted fallback if CPU inference is not usable.
+
+**Actions Completed.** Ran the normal transcription path against the ignored 45-second WAV excerpt, then started the explicit eight-stage analysis workflow against the persisted transcript in an isolated SQLite database. Transcription completed and persisted correctly. The full Ollama `phi3:mini` run required approximately 13 minutes and failed during final consolidation after the configured 300-second HTTP request timeout; no successful report was recorded. Reviewed the community `free-ai-apis` catalogue and current provider documentation.
+
+**System Result.** Local Whisper remains suitable for this PC. Local Ollama is suitable only for bounded experiments, not yet for a dependable full report workflow. The recommended hosted analysis test is Gemini Flash through the Gemini API free tier, with Groq as the speed-focused alternative and OpenRouter reserved for comparing free models. Remote speech-to-text is not currently needed because local Whisper passed its benchmark.
+
+**Safety Status.** No external AI request was made during this evaluation. Any hosted test must use the 45-second excerpt or synthetic text first, keep the API key in the ignored `.env`, and receive approval before sending real meeting content. The application remains local-only until a provider is deliberately configured.
+
 ## 2026-10-26 — Implement Phase 2A local admin security boundary
 
 **Objective.** Prepare the local worker for a future authenticated admin URL without exposing the application, changing the deployment model, or starting calendar/scheduled capture work.

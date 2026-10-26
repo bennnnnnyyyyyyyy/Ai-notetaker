@@ -43,9 +43,18 @@ class Settings(BaseSettings):
     whisper_model: str = "base"
 
     # LLM
+    llm_provider: str = "ollama"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "phi3:mini"
     ollama_chunk_tokens: int = 3000
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-lite-latest"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    gemini_timeout_seconds: int = 120
+    openrouter_key: str = ""
+    openrouter_model: str = "openrouter/free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_timeout_seconds: int = 120
 
     # Google Sheets export
     google_sheets_spreadsheet_id: str = ""

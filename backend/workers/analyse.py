@@ -26,7 +26,10 @@ from typing import Optional
 import aiosqlite
 
 from backend.config import settings
+from backend.adapters.base_llm import BaseLLMAdapter
 from backend.adapters.ollama_llm import OllamaLLMAdapter
+from backend.adapters.gemini_llm import GeminiLLMAdapter
+from backend.adapters.openrouter_llm import OpenRouterLLMAdapter
 from backend.schemas.report import Report
 
 logger = logging.getLogger(__name__)
@@ -101,8 +104,18 @@ async def _load_inputs(meeting_id: str, db: aiosqlite.Connection):
 
 
 async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict:
-    llm = OllamaLLMAdapter()
-    if not await asyncio.to_thread(llm.is_available):
+    provider = settings.llm_provider.lower()
+    if provider == "gemini":
+        llm = GeminiLLMAdapter()
+        if not llm.is_available():
+            raise RuntimeError("Gemini is not configured. Set GEMINI_API_KEY in .env")
+    elif provider == "openrouter":
+        llm = OpenRouterLLMAdapter()
+        if not llm.is_available():
+            raise RuntimeError("OpenRouter is not configured. Set OPENROUTER_KEY in .env")
+    else:
+        llm = OllamaLLMAdapter()
+    if provider not in {"gemini", "openrouter"} and not await asyncio.to_thread(llm.is_available):
         raise RuntimeError(
             f"Ollama model '{settings.ollama_model}' is not available. "
             f"Run: ollama pull {settings.ollama_model}"
@@ -152,7 +165,7 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
     return report_dict
 
 
-async def _generate(llm: OllamaLLMAdapter, system_prompt: str, user_prompt: str) -> str:
+async def _generate(llm: BaseLLMAdapter, system_prompt: str, user_prompt: str) -> str:
     """Keep synchronous local-model inference off FastAPI's event loop."""
     return await asyncio.to_thread(llm.generate, system_prompt, user_prompt)
 

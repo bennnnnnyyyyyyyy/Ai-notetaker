@@ -51,6 +51,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - faster-whisper CPU transcription adapter; a 45-second CPU benchmark produced timestamped segments in 17.21 seconds cold / 10.46 seconds warm, with a measured 457.6 MB peak process working set. The normal worker now persists transcripts and stops before analysis.
 - Ollama analysis adapter.
 - Eight-stage evidence-based report pipeline.
+- A full eight-stage Ollama run was attempted against the persisted 45-second transcript. It exceeded the 300-second request timeout during final consolidation after approximately 13 minutes, so no report was accepted as successful. Hosted analysis is now being evaluated as an optional fallback; no provider is configured yet.
 - Whisper and Ollama work moved off the FastAPI event loop.
 - Pydantic report schema validation.
 
@@ -79,6 +80,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - The eight-stage analysis pipeline remains intentionally unrun for this milestone.
 - Phase 2A local admin security boundary is implemented: protected API routes, server-side sessions, CSRF checks, rate-limited login, logout, and audit events. No public tunnel or remote deployment is enabled.
 - Ollama model availability and full CPU processing time remain unverified.
+- A bounded local Ollama call previously returned in 70.84 seconds, but that does not prove the full pipeline is usable.
 - Speaker diarization is not implemented.
 
 ## Next action: supervised capture test

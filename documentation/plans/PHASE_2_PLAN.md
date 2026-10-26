@@ -182,6 +182,18 @@ Acceptance criteria:
 
 ### 2.7 Evidence-based DME/CGM analysis
 
+#### Hosted analysis fallback decision
+
+The local Whisper path remains the default because the measured 45-second excerpt completed successfully on CPU. The local Ollama path is currently a fallback for small experiments only: a full eight-stage run exceeded the five-minute request timeout during final consolidation on the i5-6500.
+
+If local analysis is not acceptable after bounded optimization, test one hosted provider behind an explicit configuration switch:
+
+1. Gemini Flash free tier — recommended first test for quality and existing Google-project alignment.
+2. Groq — recommended speed alternative with account-specific rate limits.
+3. OpenRouter — useful for comparing free models, but free-model availability and limits can change.
+
+Hosted analysis must be opt-in, use a provider-specific API key from `.env`, log provider/model/latency without logging prompts or transcripts, and be tested first with synthetic text or the short excerpt. Real meeting content must not be sent until the user approves the provider's data handling and the campaign owner approves external processing.
+
 After the secured processing path is stable:
 
 - Run the existing eight-stage pipeline explicitly against persisted transcripts.
