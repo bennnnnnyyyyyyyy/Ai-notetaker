@@ -4,7 +4,7 @@ Playwright + FFmpeg capture adapter.
 Milestone 1 implementation:
   - Launches a visible Chrome browser using the user's existing profile.
   - Navigates to the Google Meet URL.
-  - Starts FFmpeg WASAPI loopback recording in a subprocess.
+  - Starts FFmpeg DirectShow audio recording in a subprocess.
   - Monitors the browser for meeting end or admission failure.
   - Stops FFmpeg and returns the recording path.
 
@@ -145,4 +145,9 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         return duration
 
     async def get_status(self) -> str:
+        if self._status == "recording":
+            if self._page and self._page.is_closed():
+                self._status = "meeting_ended"
+            elif self._browser and not self._browser.is_connected():
+                self._status = "meeting_ended"
         return self._status

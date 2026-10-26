@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Improve capture lifecycle and setup handoff
+
+**Objective.** Continue Milestone 1 after FFmpeg installation by making the visible-browser capture lifecycle stoppable and documenting the exact remaining setup.
+
+**Actions Completed.** Updated capture documentation to describe DirectShow accurately, made browser/page closure a normalized `meeting_ended` signal, updated the milestone checklist, and added a capture setup handoff with the current device/profile findings.
+
+**System Result.** A user-approved capture can now be stopped by closing the visible browser instead of waiting for the two-hour safety cap. The live test still requires a loopback audio device and an explicitly configured authorized browser profile.
+
+**Safety Status.** No browser session was opened, no credentials were read, and no recording was created.
+
 ## 2026-10-23 — Add DME, CGM, and Roofing campaign sources
 
 **Objective.** Convert the provided business rules into maintainable campaign sources and runtime configurations.

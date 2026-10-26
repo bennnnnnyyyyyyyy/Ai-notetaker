@@ -4,7 +4,7 @@ Last updated: 2026-10-23
 
 | Milestone | Status | Evidence |
 |---|---|---|
-| 1. Capture proof of concept | 🟡 Scaffolded | [Initial review](../reviews/INITIAL_REVIEW.md) |
+| 1. Capture proof of concept | 🟡 Readiness implemented; live audio test pending | [Capture setup](../operations/CAPTURE_SETUP.md) |
 | 2. Reliable local pipeline | 📋 Planned | [Master plan](MASTER_PLAN.md) |
 | 3. Evidence-based analysis | 📋 Planned | [Master plan](MASTER_PLAN.md) |
 | 4. Workflow hardening | 📋 Planned | [Master plan](MASTER_PLAN.md) |
