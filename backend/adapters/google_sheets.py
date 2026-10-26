@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import json
@@ -96,25 +95,30 @@ def _credentials():
 
 
 def build_export_row(meeting: dict[str, Any], report: dict[str, Any] | None = None) -> list[str]:
+    """Build the compact human-facing AI worksheet row.
+
+    The AI tab is intentionally a summary view. Detailed evidence remains in
+    the local report and transcript rather than being copied into Sheets.
+    """
     report = report or {}
     profile = report.get("prospect_profile") or {}
+    campaign = (
+        meeting.get("campaign_name")
+        or report.get("campaign_name")
+        or meeting.get("campaign_id")
+        or "Generalized"
+    )
+    date = meeting.get("scheduled_at") or meeting.get("created_at") or ""
+    summary = report.get("executive_summary") or report.get("crm_ready_notes") or ""
     return [
-        datetime.now(timezone.utc).isoformat(),
-        str(meeting.get("id", "")),
-        str(meeting.get("created_at", "")),
-        str(meeting.get("status", "")),
-        str(meeting.get("meeting_type", "")),
-        str(meeting.get("url", "")),
-        str(meeting.get("campaign_id") or ""),
-        str(meeting.get("opener_name") or ""),
-        str(meeting.get("closer_name") or ""),
+        str(date),
+        str(campaign),
         str(profile.get("name") or ""),
         str(profile.get("company") or ""),
-        str(report.get("qualification_status") or ""),
-        str(report.get("outcome") or ""),
-        str(report.get("pipeline_stage") or ""),
-        str(report.get("executive_summary") or ""),
-        str(meeting.get("error_message") or ""),
+        str(meeting.get("opener_name") or ""),
+        str(meeting.get("closer_name") or ""),
+        str(report.get("outcome") or meeting.get("status") or ""),
+        str(summary),
     ]
 
 
@@ -131,7 +135,7 @@ def export_row(row: list[str]) -> dict[str, Any]:
     return (
         service.spreadsheets().values().append(
             spreadsheetId=settings.google_sheets_spreadsheet_id,
-            range=f"{settings.google_sheets_worksheet}!A:P",
+            range=f"{settings.google_sheets_worksheet}!A:H",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             body={"values": [row]},

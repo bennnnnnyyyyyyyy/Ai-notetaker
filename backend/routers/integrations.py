@@ -30,6 +30,14 @@ async def export_meeting_to_google_sheets(
         meeting = await cur.fetchone()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
+    meeting = dict(meeting)
+    if meeting.get("campaign_id"):
+        async with db.execute(
+            "SELECT name FROM campaigns WHERE id = ?", (meeting["campaign_id"],)
+        ) as cur:
+            campaign_row = await cur.fetchone()
+        if campaign_row:
+            meeting["campaign_name"] = campaign_row["name"]
 
     report = None
     async with db.execute(

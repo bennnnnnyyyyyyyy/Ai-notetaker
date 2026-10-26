@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Align Google Sheets export with AI worksheet
+
+**Objective.** Match manual export output to the user-created `AI` tab layout.
+
+**Actions Completed.** Changed the configured worksheet from `Sheet1` to `AI`. Replaced the legacy 16-column export with the requested eight-column row: date, campaign, client name, company name, opener, closer, status, and summary notes. Campaign IDs are resolved to campaign names when available; unconfigured meetings are labeled `Generalized`. Status uses the report outcome, and summary notes use the report executive summary. The export range is now `AI!A:H`.
+
+**Verification.** Added a row-builder regression test and confirmed the exact requested column order and values. No row was written to Google Sheets during this change.
+
+**Safety Status.** Local configuration and code only. Existing spreadsheet rows were not changed.
+
 ## 2026-10-26 — Redesign admin and operator workspace UI
 
 **Objective.** Replace the prototype dashboard with a usable admin console and operator-facing workspace for the PC-hosted meeting worker.

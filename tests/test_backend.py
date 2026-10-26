@@ -8,6 +8,7 @@ from backend.config import settings
 from backend.auth import create_session, get_session, hash_password
 from backend.database import _DDL
 from backend.schemas.meeting import MeetingCreate
+from backend.adapters.google_sheets import build_export_row
 
 
 @pytest.fixture
@@ -132,3 +133,30 @@ def test_google_sheets_status_is_explicitly_unconfigured(monkeypatch, admin_clie
     response = admin_client.get("/api/v1/integrations/google-sheets/status")
     assert response.status_code == 200
     assert response.json()["status"] == "needs_setup"
+
+
+def test_google_sheets_ai_row_has_requested_columns():
+    row = build_export_row(
+        {
+            "scheduled_at": "2026-10-26T21:00:00+00:00",
+            "campaign_name": "Prime Ad DME Lead Generation",
+            "opener_name": "Jane",
+            "closer_name": "Daniel",
+            "status": "completed",
+        },
+        {
+            "prospect_profile": {"name": "Ahmed", "company": "Example DME"},
+            "outcome": "Interested — no confirmed next meeting",
+            "executive_summary": "Prospect discussed lead quality and next steps.",
+        },
+    )
+    assert row == [
+        "2026-10-26T21:00:00+00:00",
+        "Prime Ad DME Lead Generation",
+        "Ahmed",
+        "Example DME",
+        "Jane",
+        "Daniel",
+        "Interested — no confirmed next meeting",
+        "Prospect discussed lead quality and next steps.",
+    ]

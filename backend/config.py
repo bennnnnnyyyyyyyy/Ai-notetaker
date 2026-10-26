@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     # Google Sheets export
     google_sheets_spreadsheet_id: str = ""
-    google_sheets_worksheet: str = "Meetings"
+    google_sheets_worksheet: str = "AI"
     google_sheets_service_account_path: Path = PROJECT_ROOT / "service-account.json"
     google_sheets_credentials_path: Path = PROJECT_ROOT / "credentials.json"
     google_sheets_token_path: Path = PROJECT_ROOT / "data/google_sheets_token.json"

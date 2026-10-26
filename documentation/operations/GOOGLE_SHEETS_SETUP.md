@@ -4,7 +4,11 @@ The first integration is a controlled export, not an autonomous CRM writer. It a
 
 ## What is exported
 
-The `Meetings` worksheet receives meeting identity/status, URL, campaign, opener/closer, prospect profile, qualification, outcome, pipeline stage, executive summary, and error information.
+The `AI` worksheet receives one compact summary row with these columns, in order:
+
+`DATE | CAMPAIGN | CLIENTS NAME | COMPANY NAME | OPENER | CLOSER | STATUS | SUMMARY NOTES`
+
+Detailed evidence remains in the local report and transcript. The `STATUS` cell uses the report outcome when a report exists, otherwise the meeting status.
 
 ## Preferred setup: service account
 
@@ -19,7 +23,7 @@ The `Meetings` worksheet receives meeting identity/status, URL, campaign, opener
 
    ```text
    GOOGLE_SHEETS_SPREADSHEET_ID=your-spreadsheet-id
-   GOOGLE_SHEETS_WORKSHEET=Meetings
+   GOOGLE_SHEETS_WORKSHEET=AI
    GOOGLE_SHEETS_SERVICE_ACCOUNT_PATH=C:\\path\\to\\service-account.json
    ```
 
