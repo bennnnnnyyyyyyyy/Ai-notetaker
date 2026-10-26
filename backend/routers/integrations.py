@@ -12,8 +12,22 @@ from backend.adapters.google_sheets import (
 )
 from backend.database import get_db
 from backend.auth import public_error_message
+from backend.adapters.bd_meetings import BDMeetingsSetupError, get_status as get_bd_status, list_bookings
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
+
+
+@router.get("/bd-meetings/status")
+async def bd_meetings_status():
+    return get_bd_status()
+
+
+@router.get("/bd-meetings/bookings")
+async def bd_meetings_bookings(limit: int = 200):
+    try:
+        return {"bookings": await asyncio.to_thread(list_bookings, limit)}
+    except BDMeetingsSetupError as exc:
+        raise HTTPException(status_code=503, detail=public_error_message(exc, "BD Meetings source is not available.")) from exc
 
 
 @router.get("/google-sheets/status")

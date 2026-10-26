@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     google_sheets_credentials_path: Path = PROJECT_ROOT / "credentials.json"
     google_sheets_token_path: Path = PROJECT_ROOT / "data/google_sheets_token.json"
 
+    # Read-only BD Meetings workbook import
+    bd_meetings_workbook_path: Path = Path(r"C:\Users\ben.arthur\Desktop\BD MEETINGS 2026\BD MEETINGS 2026.xlsx")
+    bd_meetings_worksheet: str = "New Meetings"
+
     # Optional paid adapters (empty = disabled)
     openai_api_key: str = ""
     recall_ai_api_key: str = ""

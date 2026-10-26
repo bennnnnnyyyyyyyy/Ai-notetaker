@@ -1,5 +1,25 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Add read-only BD Meetings workbook integration
+
+**Objective.** Use the Desktop `BD MEETINGS 2026.xlsx` booking workbook as a source for meeting candidates without changing the source file.
+
+**Actions Completed.** Added a local read-only workbook adapter for the `New Meetings` worksheet, configuration for the workbook path and worksheet, and authenticated API endpoints for source status and booking previews. The adapter maps company, authorized contact, opener, status, date added, meeting-time cell, opener summary, closer notes, email, calendar event link, and any Meet URL. It recognizes the existing Google Calendar event-edit hyperlinks and marks rows as import-ready only when a real `meet.google.com` URL is present.
+
+**Discovery Result.** The current workbook contains Calendar event-edit hyperlinks in meeting-time cells, not direct Google Meet URLs. The integration therefore previews the bookings but deliberately does not create capture meetings from Calendar URLs. Calendar-to-Meet resolution is a separate permissioned integration step.
+
+**Safety Status.** Read-only inspection and API code only. The Desktop workbook was not modified, copied into the repository, or committed.
+
+## 2026-10-26 — Verify AI worksheet export with latest meeting
+
+**Objective.** Confirm the new eight-column export against the latest completed meeting.
+
+**Actions Completed.** Used the normal authenticated export route for meeting `1bd6a8ba-9951-4c2e-859b-6e8bcf91f4f1`. The row was appended to the configured `AI` worksheet.
+
+**System Result.** Google Sheets returned HTTP 200 with updated range `AI!A2:H2`, one row, eight columns, and eight cells. The first CSRF-protected attempt was rejected as expected; the retry included the issued CSRF token and succeeded.
+
+**Safety Status.** This was the explicitly requested test export. No other spreadsheet tabs or external systems were changed.
+
 ## 2026-10-26 — Align Google Sheets export with AI worksheet
 
 **Objective.** Match manual export output to the user-created `AI` tab layout.
