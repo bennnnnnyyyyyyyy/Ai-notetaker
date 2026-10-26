@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Run short Whisper, Ollama, and Google Sheets integration tests
+
+**Objective.** Validate local transcription on a short excerpt, run a bounded local Llama test against that transcript, and confirm the configured Google Sheets export can write a meeting row.
+
+**Actions Completed.** Created the ignored 45-second excerpt `data/recordings/whisper_test_45s.wav` from the existing recording. Ran `faster-whisper/base` on CPU and verified four normalized segments with `segment_id`, `start_ms`, `end_ms`, and `text`. The cold run took 17.21 seconds (real-time factor 0.382); a warm run took 10.46 seconds (real-time factor 0.232). The measured peak process working set was 457.6 MB during the warm run. Saved the local test transcript as `data/transcripts/whisper_test_45s.json`. Sent only that local transcript to Ollama `phi3:mini`; it returned a segment-cited JSON-style response in 70.84 seconds, saved as `data/reports/ollama_test_45s.txt`. Exported the existing test meeting to the configured Google Sheet using the service account; Google reported `Sheet1!A1:P1`, 16 cells updated.
+
+**System Result.** Short-excerpt transcription and local Llama inference work on this PC. Google Sheets write access also works. The full eight-stage analysis pipeline has not been run; SQLite persistence for this standalone excerpt test remains separate from the direct adapter validation.
+
+**Safety Status.** All audio, transcript, report output, and credentials remained local except for the explicitly requested one-row Google Sheets test. No email, CRM, booking, or meeting action was performed.
+
 ## 2026-10-26 — Reconcile transcription milestone evidence
 
 **Objective.** Establish the actual status of the requested faster-whisper validation before starting evidence-based analysis.

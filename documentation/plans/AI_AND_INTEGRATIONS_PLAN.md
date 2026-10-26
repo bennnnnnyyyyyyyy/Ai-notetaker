@@ -99,6 +99,6 @@ Before downloading models or implementing complex pipelines, the system hardware
 | **Capture Adapter** | **Implemented** | Automated Meet pre-join dismiss, mic/cam mute, "Join now" click, and lifecycle tracking in `backend/adapters/playwright_capture.py`. |
 | **Server & Dashboard** | **Running** | FastAPI backend running on `http://127.0.0.1:8000`. Readiness shows all subsystems ready. |
 | **Real Meet Two-Way Audio** | **Pending** | Needs supervised test to confirm both microphone and remote participant voices are audible in the generated WAV. |
-| **Transcription** | **Partial** | `FasterWhisperTranscriber` has produced timestamped segments in a manual local run; the short-excerpt benchmark, CPU/peak-memory record, and SQLite persistence proof remain pending. |
+| **Transcription** | **Partial** | 45-second CPU benchmark and timestamped segments are verified; normal worker/SQLite persistence proof remains pending. |
 | **Local LLM Model** | **Postponed** | No model downloaded yet. Awaiting audio and transcription proof. |
 | **External Integrations** | **Deferred** | Scope narrowed to local core product first. |
