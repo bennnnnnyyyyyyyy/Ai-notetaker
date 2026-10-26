@@ -349,7 +349,7 @@ def _flatten_transcript(transcript: dict) -> str:
     for seg in transcript.get("segments", []):
         sid = seg.get("segment_id", "")
         speaker = seg.get("speaker_id") or "Unknown"
-        start = seg.get("start_ms", 0) / 1000
+        start = seg.get("start", seg.get("start_ms", 0) / 1000)
         text = seg.get("text", "")
         lines.append(f"[{sid} {start:.1f}s {speaker}] {text}")
     return "\n".join(lines)

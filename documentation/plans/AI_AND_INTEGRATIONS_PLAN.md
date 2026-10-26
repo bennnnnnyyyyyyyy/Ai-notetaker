@@ -55,7 +55,7 @@ Before downloading models or implementing complex pipelines, the system hardware
 * **Requirements**:
   1. Test against a short audio fixture first before processing full-length calls.
   2. Measure CPU utilization, processing speed (Real-Time Factor), and memory usage for the `base` model.
-  3. Verify timestamped segments JSON structure (`segment_id`, `start_ms`, `end_ms`, `text`).
+  3. Verify timestamped segments JSON structure (`segment_id`, `start`, `end`, `text`), with seconds in the JSON contract and millisecond conversion only at the existing SQLite boundary.
   4. Populate SQLite `transcripts` and `transcript_segments` tables.
 
 ### Milestone 3 — Expert Knowledge Base & Sales Analysis
@@ -99,6 +99,6 @@ Before downloading models or implementing complex pipelines, the system hardware
 | **Capture Adapter** | **Implemented** | Automated Meet pre-join dismiss, mic/cam mute, "Join now" click, and lifecycle tracking in `backend/adapters/playwright_capture.py`. |
 | **Server & Dashboard** | **Running** | FastAPI backend running on `http://127.0.0.1:8000`. Readiness shows all subsystems ready. |
 | **Real Meet Two-Way Audio** | **Pending** | Needs supervised test to confirm both microphone and remote participant voices are audible in the generated WAV. |
-| **Transcription** | **Partial** | 45-second CPU benchmark and timestamped segments are verified; normal worker/SQLite persistence proof remains pending. |
+| **Transcription** | **Verified** | 45-second CPU benchmark, `start`/`end`/`text` segment contract, normal worker persistence, failure status, and idempotent retry are verified. |
 | **Local LLM Model** | **Postponed** | No model downloaded yet. Awaiting audio and transcription proof. |
 | **External Integrations** | **Deferred** | Scope narrowed to local core product first. |

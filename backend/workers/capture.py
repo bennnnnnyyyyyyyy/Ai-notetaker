@@ -6,7 +6,7 @@ Orchestrates:
   2. Starts PlaywrightCaptureAdapter (browser + FFmpeg).
   3. Waits for the meeting to end (or a timeout).
   4. Stops the adapter and saves the recording record.
-  5. Triggers the transcription worker.
+  5. Triggers the transcription worker; analysis is started separately by its API action.
 """
 
 import asyncio

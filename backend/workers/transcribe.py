@@ -5,7 +5,7 @@ Orchestrates:
   1. Runs FasterWhisperTranscriber on the recording.
   2. Saves the normalized transcript JSON to data/transcripts/.
   3. Writes transcript + segment records to SQLite.
-  4. Chains into the analysis worker.
+  4. Marks the meeting completed; analysis is an explicit separate action.
 """
 
 import json
@@ -57,6 +57,19 @@ async def run_transcription(
         transcript_path.write_text(json.dumps(transcript_doc, indent=2))
         logger.info("Transcript saved to %s", transcript_path)
 
+        # Replace an earlier transcript for this meeting atomically on retry.
+        # The old rows are removed only after transcription succeeded.
+        async with db.execute(
+            "SELECT id FROM transcripts WHERE meeting_id = ?", (meeting_id,)
+        ) as cur:
+            previous_ids = [row["id"] for row in await cur.fetchall()]
+        for previous_id in previous_ids:
+            await db.execute(
+                "DELETE FROM transcript_segments WHERE transcript_id = ?",
+                (previous_id,),
+            )
+        await db.execute("DELETE FROM transcripts WHERE meeting_id = ?", (meeting_id,))
+
         # Write to DB
         transcript_id = str(uuid.uuid4())
         await db.execute(
@@ -84,17 +97,18 @@ async def run_transcription(
                     seg_id,
                     transcript_id,
                     seg["segment_index"],
-                    seg["start_ms"],
-                    seg.get("end_ms"),
+                    int(round(seg["start"] * 1000)),
+                    int(round(seg["end"] * 1000)),
                     seg.get("speaker_id"),
                     seg["text"],
                 ),
             )
         await db.commit()
-
-        # Chain into analysis
-        from backend.workers.analyse import run_analysis_with_db
-        await run_analysis_with_db(meeting_id, db)
+        await db.execute(
+            "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
+            (datetime.utcnow().isoformat(), meeting_id),
+        )
+        await db.commit()
 
     except Exception as exc:
         logger.exception("Transcription failed for meeting %s", meeting_id)

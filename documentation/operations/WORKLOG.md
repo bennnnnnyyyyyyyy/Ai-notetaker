@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Complete and verify Milestone 2 transcription persistence
+
+**Objective.** Prove that an existing meeting recording can pass through the normal transcription worker, persist correctly in SQLite, and remain separate from AI analysis.
+
+**Actions Completed.** Traced the prior manual run and confirmed it bypassed the worker entirely, which explained the zero database rows. Updated the adapter to emit one canonical JSON segment contract (`start`, `end`, `text` in seconds), reject missing audio clearly, skip empty/invalid segments, and keep timestamps within the WAV duration. Updated the worker to persist the transcript, replace prior transcript rows safely on retry, mark the meeting completed, and leave analysis as an explicit separate API action. Created an isolated 45-second excerpt from the existing meeting recording. Ran the actual worker twice against an isolated SQLite test database, exercised a missing-file failure, and verified the stored JSON and linked rows.
+
+**System Result.** Before the worker test: 0 transcripts, 0 segments, 0 reports. After the first run: 1 transcript, 4 linked segments, 0 reports, meeting status `completed`. After retry: still 1 transcript, 4 segments, 0 reports. Failure test returned status `failed` with a useful missing-file error and did not add rows. Persisted segment read-back retained timestamps and text. Milestone 2 is verified; Milestone 3 analysis remains intentionally unrun.
+
+**Safety Status.** Test data used an isolated SQLite database and ignored local data paths. No original recording was overwritten, no LLM call was made, and no external service was used.
+
 ## 2026-10-26 — Run short Whisper, Ollama, and Google Sheets integration tests
 
 **Objective.** Validate local transcription on a short excerpt, run a bounded local Llama test against that transcript, and confirm the configured Google Sheets export can write a meeting row.

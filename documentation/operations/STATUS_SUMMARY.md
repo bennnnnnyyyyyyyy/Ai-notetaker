@@ -48,7 +48,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 
 ### Local processing
 
-- faster-whisper CPU transcription adapter; a 45-second CPU benchmark produced timestamped segments in 17.21 seconds cold / 10.46 seconds warm, with a measured 457.6 MB peak process working set.
+- faster-whisper CPU transcription adapter; a 45-second CPU benchmark produced timestamped segments in 17.21 seconds cold / 10.46 seconds warm, with a measured 457.6 MB peak process working set. The normal worker now persists transcripts and stops before analysis.
 - Ollama analysis adapter.
 - Eight-stage evidence-based report pipeline.
 - Whisper and Ollama work moved off the FastAPI event loop.
@@ -75,8 +75,8 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 
 - No successful real Google Meet capture has been completed yet.
 - No real meeting audio has been confirmed in a saved WAV file.
-- No transcript has been persisted through the normal worker/database path, and no analysis report has been validated from a meeting.
-- The normal transcription worker/database persistence path remains unverified; the standalone excerpt transcript is saved locally.
+- No full-length production transcript or analysis report has been validated from a meeting. The isolated 45-second real-recording test is persisted and verified.
+- The eight-stage analysis pipeline remains intentionally unrun for this milestone.
 - Ollama model availability and full CPU processing time remain unverified.
 - Speaker diarization is not implemented.
 

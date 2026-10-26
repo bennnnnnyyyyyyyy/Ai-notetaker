@@ -9,8 +9,7 @@ in the default HuggingFace cache directory.
 """
 
 import logging
-from typing import Optional
-
+from pathlib import Path
 from backend.adapters.base_transcriber import BaseTranscriber
 from backend.config import settings
 
@@ -40,6 +39,9 @@ class FasterWhisperTranscriber(BaseTranscriber):
         Speaker diarisation is NOT performed in this adapter.
         speaker_id will be None for all segments.
         """
+        if not Path(audio_path).is_file():
+            raise FileNotFoundError(f"Audio recording does not exist: {audio_path}")
+
         model = _get_model()
         logger.info("Transcribing %s with model '%s'", audio_path, settings.whisper_model)
 
@@ -62,13 +64,21 @@ class FasterWhisperTranscriber(BaseTranscriber):
         )
 
         results = []
+        duration_seconds = len(audio_input) / 16000 if not isinstance(audio_input, str) else None
         for idx, seg in enumerate(segments):
+            start = max(0.0, float(seg.start))
+            end = max(start, float(seg.end))
+            if duration_seconds is not None:
+                end = min(end, duration_seconds)
+            text = seg.text.strip()
+            if not text or end < start:
+                continue
             results.append({
                 "segment_index": idx,
-                "start_ms": int(seg.start * 1000),
-                "end_ms": int(seg.end * 1000),
+                "start": start,
+                "end": end,
                 "speaker_id": None,  # diarisation not implemented
-                "text": seg.text.strip(),
+                "text": text,
             })
 
         logger.info(
