@@ -48,11 +48,28 @@ async function api(path, options = {}) {
   });
   if (!response.ok) {
     let detail = response.statusText;
-    try { detail = (await response.json()).detail || detail; } catch (_) { /* plain error */ }
+    try {
+      const payload = await response.json();
+      detail = formatApiError(payload.detail || payload);
+    } catch (_) { /* plain error */ }
     if (response.status === 401) showLogin(detail);
     throw new Error(detail);
   }
   return response.status === 204 ? null : response.json();
+}
+
+function formatApiError(detail) {
+  if (Array.isArray(detail)) {
+    return detail.map((item) => {
+      if (typeof item === 'string') return item;
+      const location = Array.isArray(item.loc) ? `${item.loc.join('.')}: ` : '';
+      return `${location}${item.msg || item.message || 'Invalid value'}`;
+    }).join('; ');
+  }
+  if (detail && typeof detail === 'object') {
+    return detail.message || detail.msg || 'The request could not be completed.';
+  }
+  return String(detail || 'The request could not be completed.');
 }
 
 function meetingCard(meeting) {

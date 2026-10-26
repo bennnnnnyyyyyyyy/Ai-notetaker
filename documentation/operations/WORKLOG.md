@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Make Meet capture join muted
+
+**Objective.** Ensure the capture participant cannot be heard when joining an authorized Google Meet test.
+
+**Actions Completed.** Replaced blind `Ctrl+D` microphone toggles with state-aware Google Meet controls. The join flow now clicks the Meet microphone button only when its accessible label indicates the microphone is on, accepts an already-muted state, and logs a warning if Meet's state cannot be confirmed. The existing “Continue without microphone” prompt handling remains active.
+
+**System Result.** The capture adapter compiles and imports successfully. A live browser test is still required to verify the current Meet UI labels on this machine.
+
+**Safety Status.** This change only controls the capture participant's microphone state. It does not bypass authentication, admission, or recording consent.
+
 ## 2026-10-26 — Apply Phase 2A security-hardening audit fixes
 
 **Objective.** Address the supplied backend security audit before considering any public admin URL.

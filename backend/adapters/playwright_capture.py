@@ -195,25 +195,15 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 ask_join = page.locator('button:has-text("Ask to join"), [role="button"]:has-text("Ask to join")')
 
                 if await join_now.count() > 0 and await join_now.first.is_visible():
-                    # Turn off mic and camera (silent observer note-taker)
-                    try:
-                        await page.keyboard.press("Control+d")
-                        await page.keyboard.press("Control+e")
-                        await asyncio.sleep(0.5)
-                    except Exception:
-                        pass
+                    # Ensure the Meet microphone button is visibly muted before joining.
+                    await self._ensure_microphone_muted()
                     logger.info("Clicking 'Join now'...")
                     await join_now.first.click()
                     self._status = "recording"
                     await asyncio.sleep(2)
                     return
                 elif await ask_join.count() > 0 and await ask_join.first.is_visible():
-                    try:
-                        await page.keyboard.press("Control+d")
-                        await page.keyboard.press("Control+e")
-                        await asyncio.sleep(0.5)
-                    except Exception:
-                        pass
+                    await self._ensure_microphone_muted()
                     logger.info("Clicking 'Ask to join'...")
                     await ask_join.first.click()
                     self._status = "waiting_for_admission"
@@ -224,6 +214,39 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 logger.debug("Join step check error: %s", exc)
 
             await asyncio.sleep(1)
+
+    async def _ensure_microphone_muted(self) -> bool:
+        """Mute through Meet's button only when its label says the mic is on."""
+        page = self._page
+        if not page or page.is_closed():
+            return False
+        on_selectors = (
+            '[aria-label*="Turn off microphone"]',
+            '[data-tooltip*="Turn off microphone"]',
+            '[aria-label*="Mute microphone"]',
+        )
+        off_selectors = (
+            '[aria-label*="Turn on microphone"]',
+            '[data-tooltip*="Turn on microphone"]',
+            '[aria-label*="Unmute microphone"]',
+        )
+        try:
+            for selector in off_selectors:
+                locator = page.locator(selector)
+                if await locator.count() > 0 and await locator.first.is_visible():
+                    logger.info("Meet microphone is already muted.")
+                    return True
+            for selector in on_selectors:
+                locator = page.locator(selector)
+                if await locator.count() > 0 and await locator.first.is_visible():
+                    await locator.first.click()
+                    await asyncio.sleep(0.5)
+                    logger.info("Muted Meet microphone before joining.")
+                    return True
+        except Exception as exc:
+            logger.warning("Could not verify Meet microphone state: %s", type(exc).__name__)
+        logger.warning("Meet microphone state could not be confirmed before joining.")
+        return False
 
     async def stop(self) -> float:
         duration = 0.0
