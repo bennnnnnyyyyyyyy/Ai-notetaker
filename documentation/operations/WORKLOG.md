@@ -1,5 +1,20 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Add Stop Capture button and URL-based meeting end detection
+
+**Objective.** Ensure meetings end cleanly when a participant leaves the call without requiring browser window closure, and provide explicit manual stop controls on the dashboard.
+
+**Actions Completed.**
+- Added `POST /api/v1/meetings/{meeting_id}/stop-capture` route.
+- Registered active capture instances in `backend/workers/capture.py` and implemented `stop_capture(meeting_id)` to signal running workers immediately.
+- Reduced capture polling interval from 10s to 2s for responsive state detection.
+- Expanded `get_status` in `PlaywrightCaptureAdapter` to detect Google Meet `/landing` redirect, "You left the meeting", "Rejoin", and "Return to home screen" screens.
+- Added visual red "Stop capture" button to the meeting detail card in `frontend/app.js` and `frontend/style.css`.
+
+**System Result.** Meetings now detect Google Meet exits automatically and can also be stopped manually from the UI with a single click.
+
+**Safety Status.** No credentials or session tokens inspected. Clean subprocess termination.
+
 ## 2026-10-26 — Implement automated Google Meet join and admission flow
 
 **Objective.** Automate Google Meet pre-join and admission flow to fulfill Milestone 1 requirements (joining, waiting room, denied admission, mic/cam muting, meeting ended detection).

@@ -69,18 +69,45 @@ async function loadReadiness() {
   $('readiness').innerHTML = `<div class="readiness-summary">Overall: <strong>${escapeHtml(result.status)}</strong></div>${rows}`;
 }
 
-async function openMeeting(id) {
-  currentMeetingId = id;
-  const meeting = await api(`/meetings/${id}`);
-  $('detail-content').innerHTML = `<h1>Meeting</h1><div class="form-card">
+function renderMeetingDetail(meeting) {
+  const isCancellable = ['joining', 'waiting_for_admission', 'recording'].includes(meeting.status);
+  const isStartable = ['pending', 'failed'].includes(meeting.status);
+  return `<h1>Meeting</h1><div class="form-card">
     <p><strong>Type:</strong> ${escapeHtml(meeting.meeting_type)}</p>
     <p role="status" aria-live="polite"><strong>Status:</strong> <span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></p>
     <p><strong>URL:</strong> <a href="${escapeHtml(meeting.url)}" target="_blank" rel="noopener">${escapeHtml(meeting.url)}</a></p>
     ${meeting.error_message ? `<p class="form-error">${escapeHtml(meeting.error_message)}</p>` : ''}
-    ${['pending', 'failed'].includes(meeting.status) ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
+    <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+      ${isStartable ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
+      ${isCancellable ? `<button class="btn-danger" id="stop-${meeting.id}">Stop capture</button>` : ''}
+    </div>
   </div>`;
+}
+
+function bindMeetingActions(meeting) {
   const start = $(`start-${meeting.id}`);
-  if (start) start.onclick = async () => { await api(`/meetings/${meeting.id}/start-capture`, { method: 'POST' }); await loadMeetings(); await openMeeting(meeting.id); };
+  if (start) start.onclick = async () => {
+    start.disabled = true;
+    start.textContent = 'Starting…';
+    await api(`/meetings/${meeting.id}/start-capture`, { method: 'POST' });
+    await loadMeetings();
+    await openMeeting(meeting.id);
+  };
+  const stop = $(`stop-${meeting.id}`);
+  if (stop) stop.onclick = async () => {
+    stop.disabled = true;
+    stop.textContent = 'Stopping…';
+    await api(`/meetings/${meeting.id}/stop-capture`, { method: 'POST' });
+    await loadMeetings();
+    await openMeeting(meeting.id);
+  };
+}
+
+async function openMeeting(id) {
+  currentMeetingId = id;
+  const meeting = await api(`/meetings/${id}`);
+  $('detail-content').innerHTML = renderMeetingDetail(meeting);
+  bindMeetingActions(meeting);
   showView('meeting-detail');
 }
 
@@ -130,15 +157,8 @@ setInterval(async () => {
     if (currentMeetingId && state.currentView === 'meeting-detail') {
       const meeting = await api(`/meetings/${currentMeetingId}`).catch(() => null);
       if (meeting) {
-        $('detail-content').innerHTML = `<h1>Meeting</h1><div class="form-card">
-          <p><strong>Type:</strong> ${escapeHtml(meeting.meeting_type)}</p>
-          <p role="status" aria-live="polite"><strong>Status:</strong> <span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></p>
-          <p><strong>URL:</strong> <a href="${escapeHtml(meeting.url)}" target="_blank" rel="noopener">${escapeHtml(meeting.url)}</a></p>
-          ${meeting.error_message ? `<p class="form-error">${escapeHtml(meeting.error_message)}</p>` : ''}
-          ${['pending', 'failed'].includes(meeting.status) ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
-        </div>`;
-        const start = $(`start-${meeting.id}`);
-        if (start) start.onclick = async () => { await api(`/meetings/${meeting.id}/start-capture`, { method: 'POST' }); await loadMeetings(); await openMeeting(meeting.id); };
+        $('detail-content').innerHTML = renderMeetingDetail(meeting);
+        bindMeetingActions(meeting);
       }
     }
   }

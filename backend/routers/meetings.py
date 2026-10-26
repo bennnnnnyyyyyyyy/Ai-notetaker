@@ -99,6 +99,17 @@ async def start_capture(
     return {"detail": "Capture started", "meeting_id": meeting_id}
 
 
+@router.post("/{meeting_id}/stop-capture", status_code=200)
+async def stop_capture_route(
+    meeting_id: str,
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Signal an active capture worker to cleanly stop recording."""
+    from backend.workers.capture import stop_capture
+    stopped = await stop_capture(meeting_id)
+    return {"detail": "Capture stopping" if stopped else "No active capture in memory", "meeting_id": meeting_id}
+
+
 @router.post("/{meeting_id}/retry", status_code=202)
 async def retry_meeting(
     meeting_id: str,

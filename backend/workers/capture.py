@@ -14,6 +14,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import aiosqlite
 
@@ -25,7 +26,22 @@ logger = logging.getLogger(__name__)
 # Maximum recording duration in seconds (2 hours safety cap)
 MAX_DURATION = 7200
 # Polling interval while waiting for the meeting to end
-POLL_INTERVAL = 10
+POLL_INTERVAL = 2
+
+_active_captures: dict[str, PlaywrightCaptureAdapter] = {}
+
+
+def get_active_capture(meeting_id: str) -> Optional[PlaywrightCaptureAdapter]:
+    return _active_captures.get(meeting_id)
+
+
+async def stop_capture(meeting_id: str) -> bool:
+    adapter = _active_captures.get(meeting_id)
+    if adapter:
+        logger.info("Stopping active capture for meeting %s via stop_capture request", meeting_id)
+        adapter._status = "meeting_ended"
+        return True
+    return False
 
 
 async def _set_status(db: aiosqlite.Connection, meeting_id: str, status: str, error: str = None):
@@ -54,6 +70,7 @@ async def run_capture(meeting_id: str) -> None:
 
         meeting_url = row["url"]
         adapter = PlaywrightCaptureAdapter()
+        _active_captures[meeting_id] = adapter
 
         try:
             await _set_status(db, meeting_id, "joining")
@@ -104,3 +121,5 @@ async def run_capture(meeting_id: str) -> None:
             if partial and partial.exists() and partial.stat().st_size == 0:
                 partial.unlink()
             await _set_status(db, meeting_id, "failed", error=str(exc))
+        finally:
+            _active_captures.pop(meeting_id, None)

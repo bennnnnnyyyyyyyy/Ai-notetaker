@@ -292,12 +292,20 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                         logger.warning("Google Meet admission denied.")
                         self._status = "failed"
 
-                # If recording, check if meeting ended on screen
+                # If recording, check if meeting ended on screen or URL changed to landing
                 elif self._status == "recording":
-                    ended = self._page.locator("text='You left the meeting', text='You\\'ve left the meeting', text='Everyone else left', text='Return to home screen'")
-                    if await ended.count() > 0 and await ended.first.is_visible():
-                        logger.info("Detected meeting ended on screen.")
+                    url = self._page.url.lower()
+                    if "/landing" in url or "meet.google.com/_meet" in url:
+                        logger.info("Detected Google Meet exit URL: %s", url)
                         self._status = "meeting_ended"
+                        return self._status
+
+                    for marker in ["You left the meeting", "You've left the meeting", "Return to home screen", "Rejoin", "Everyone else left", "Someone removed you"]:
+                        elem = self._page.locator(f"text='{marker}'")
+                        if await elem.count() > 0 and await elem.first.is_visible():
+                            logger.info("Detected post-meeting screen indicator: %s", marker)
+                            self._status = "meeting_ended"
+                            return self._status
             except Exception:
                 pass
 

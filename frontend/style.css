@@ -206,6 +206,19 @@ textarea { resize: vertical; }
 }
 .btn-primary:hover { background: var(--accent-dim); }
 
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  padding: .65rem 1.5rem;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn-danger:hover { opacity: .85; }
+
 .btn-back {
   background: none;
   border: 1px solid var(--border);
