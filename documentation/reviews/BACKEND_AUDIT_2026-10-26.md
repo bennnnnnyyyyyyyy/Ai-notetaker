@@ -111,6 +111,7 @@ Implemented after this audit:
 - Navigation error handling and non-blocking Whisper/Ollama calls.
 - Campaign config path restriction.
 - Startup recovery for jobs interrupted by a server stop, making them explicitly retryable.
+- Dedicated capture-tab navigation so Chrome startup/restore tabs cannot mask a failed Meet navigation.
 - Initial backend tests for health/readiness, URL validation, and campaign path safety.
 
 Still pending:

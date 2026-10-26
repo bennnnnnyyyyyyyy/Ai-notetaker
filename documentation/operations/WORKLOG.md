@@ -1,5 +1,25 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Publish current status summary
+
+**Objective.** Give the project a single concise handoff covering the Read AI-style objective, verified implementation, remaining uncertainty, and next supervised capture test.
+
+**Actions Completed.** Added `documentation/operations/STATUS_SUMMARY.md` with the current architecture, capture readiness, audit-fix status, verification results, and manual next steps.
+
+**System Result.** The project state is documented without overstating the result: real authorized Meet capture, transcription, and analysis remain pending.
+
+**Safety Status.** Documentation only. No external systems, credentials, browser profiles, or meeting content changed.
+
+## 2026-10-26 — Use a dedicated capture tab for Meet navigation
+
+**Objective.** Resolve the Read AI-style capture flow opening Chrome on `about:blank` instead of the registered Meet URL.
+
+**Actions Completed.** Updated the persistent browser adapter to create a fresh capture tab, close only blank startup tabs, navigate that dedicated tab to the registered URL, and log the committed URL and response status.
+
+**System Result.** The next supervised capture should show the Meet URL in the visible capture tab. The browser remains visible and all Google authentication, admission, and consent actions remain manual.
+
+**Safety Status.** No credentials were inspected, no authentication or admission was bypassed, and no real meeting was joined by this change.
+
 ## 2026-10-26 — Implement audit fixes for capture and dashboard
 
 **Objective.** Apply the actionable fixes from both the backend and frontend audits before the next authorized meeting test.

@@ -104,7 +104,17 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 if browser_executable:
                     persistent_args["executable_path"] = browser_executable
                 self._browser = await self._playwright.chromium.launch_persistent_context(**persistent_args)
-                self._page = self._browser.pages[0] if self._browser.pages else await self._browser.new_page()
+                # Chrome may expose a startup/restore tab as about:blank. Do
+                # not reuse it: create a dedicated capture tab so navigation
+                # is deterministic and the meeting URL is visible to the user.
+                existing_pages = list(self._browser.pages)
+                self._page = await self._browser.new_page()
+                for page in existing_pages:
+                    if page.url in {"about:blank", "chrome://newtab/"}:
+                        try:
+                            await page.close()
+                        except PlaywrightError:
+                            pass
             else:
                 self._browser = await self._playwright.chromium.launch(**browser_args)
                 self._page = await self._browser.new_page()
@@ -120,7 +130,8 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         # and leave the user staring at about:blank. `commit` confirms that the
         # navigation started; Meet can continue loading in the visible browser.
         try:
-            await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
+            response = await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
+            logger.info("Meet navigation committed: url=%s status=%s", self._page.url, response.status if response else "unknown")
             await asyncio.sleep(2)
         except PlaywrightError as exc:
             self._status = "failed"
