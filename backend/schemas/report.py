@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+import json
+
+from pydantic import BaseModel, field_validator
 from typing import Optional, Literal
 
 
@@ -32,6 +34,7 @@ MeetingOutcome = Literal[
 ]
 
 Score = Literal[1, 2, 3, 4, 5, "Not assessable"]
+CommercialStatus = Literal["proposed", "discussed", "accepted", "rejected", "unknown"]
 
 
 # ── Sub-models ────────────────────────────────────────────────────────────────
@@ -56,9 +59,19 @@ class CloserScorecard(BaseModel):
     objection_handling: ScorecardCategory
     qualification: ScorecardCategory
     closing_effectiveness: ScorecardCategory
-    conversation_control: Optional[str] = None
+    conversation_control: Optional[ScorecardCategory] = None
     unanswered_material_questions: list[str] = []
     overall_notes: Optional[str] = None
+
+    @field_validator("conversation_control", mode="before")
+    @classmethod
+    def parse_legacy_conversation_control(cls, value):
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return {"score": "Not assessable", "evidence": "unknown", "notes": value}
+        return value
 
 
 class QualificationCriterion(BaseModel):
@@ -80,6 +93,10 @@ class Objection(BaseModel):
 class CommercialTerm(BaseModel):
     term: str
     value: Optional[str] = None
+    currency: Optional[str] = None
+    fee_type: Optional[str] = None
+    payment_timing: Optional[str] = None
+    status: CommercialStatus = "unknown"
     evidence_type: EvidenceType = "Confirmed fact"
     segment_id: Optional[str] = None
 

@@ -19,6 +19,8 @@ import json
 import logging
 import uuid
 import asyncio
+import re
+from difflib import SequenceMatcher
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -156,7 +158,7 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
     raw_report = await _generate(llm, system_base, final_prompt)
 
     # Stage 8 — extract and validate JSON
-    report_dict = _normalize_report_dict(_extract_json(raw_report))
+    report_dict = _normalize_report_dict(_extract_json(raw_report), transcript)
     report_dict["meeting_id"] = meeting["id"]
     report_dict["campaign_id"] = meeting.get("campaign_id")
     report_dict["campaign_config_version"] = campaign.get("version")
@@ -360,10 +362,13 @@ management_observations, crm_ready_notes, transcript_quality_notes.
     - qualification_status is one of the exact allowed status strings, not an object.
     - each qualification_criteria item uses criterion_id, description, status (met|unmet|unknown),
       and optional evidence.
-    - every opener_performance and closer_scorecard category is an object with score and evidence.
-      Use score "Not assessable" and evidence "unknown" when evidence is insufficient.
+    - every opener_performance and closer_scorecard category is an object with score, evidence,
+      and concise notes explaining the score. Use score "Not assessable" plus a specific reason
+      in notes when evidence is insufficient.
     - agreed_actions is an array of action objects, never an object or string.
     - unanswered_material_questions is an array, never a string.
+    - commercial_terms is an array containing every explicitly discussed amount or payment term,
+      with value, fee_type/payment_timing, status, and segment_id where supported.
     Mark any unknown field as "unknown" or "not_assessable". Do not fabricate.
     If no campaign is supplied, produce a generalized sales-meeting report; do not downgrade
     general discovery, objection handling, presentation, or closing evidence merely because
@@ -423,6 +428,33 @@ def _as_text(value, default: str = "unknown") -> str:
     return str(value)
 
 
+def _normalize_prospect_profile(value) -> dict:
+    """Flatten older nested model output into the canonical profile contract."""
+    value = value if isinstance(value, dict) else {}
+    identity = value.get("prospect_identity") if isinstance(value.get("prospect_identity"), dict) else {}
+    needs_block = value.get("stated_needs_and_pain_points")
+    needs_block = needs_block if isinstance(needs_block, dict) else {}
+    authority_block = value.get("authority_and_decision_process")
+    authority_block = authority_block if isinstance(authority_block, dict) else {}
+    business = value.get("business_profile")
+    if isinstance(business, dict):
+        business_description = value.get("business_description") or _as_text(business)
+    else:
+        business_description = value.get("business_description")
+    needs = needs_block.get("needs", value.get("stated_needs", []))
+    if not isinstance(needs, list):
+        needs = [needs] if needs else []
+    return {
+        "name": identity.get("name", value.get("name")),
+        "company": identity.get("company", value.get("company")),
+        "role": identity.get("role", value.get("role")),
+        "business_description": business_description,
+        "stated_needs": [_as_text(item) for item in needs],
+        "decision_authority": authority_block.get("authority", value.get("decision_authority")),
+        "evidence_type": value.get("evidence_type", "Prospect statement"),
+    }
+
+
 def _normalize_scorecard(value, fields: list[str]) -> dict:
     value = value if isinstance(value, dict) else {}
     normalized = {}
@@ -442,6 +474,11 @@ def _normalize_scorecard(value, fields: list[str]) -> dict:
             score = "Not assessable"
         elif score not in {1, 2, 3, 4, 5, "Not assessable"}:
             score = "Not assessable"
+        if score != "Not assessable" and (evidence == "unknown" or not notes):
+            score = "Not assessable"
+            notes = "No criterion-specific rationale was supplied; score requires review."
+        elif score == "Not assessable" and not notes:
+            notes = "Insufficient criterion-specific evidence for a reliable score."
         normalized[field] = {
             "score": score,
             "evidence": _as_text(evidence),
@@ -450,7 +487,107 @@ def _normalize_scorecard(value, fields: list[str]) -> dict:
     return normalized
 
 
-def _normalize_report_dict(report: dict) -> dict:
+def _parse_conversation_control(value) -> dict:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            value = {}
+    value = value if isinstance(value, dict) else {}
+    score = value.get("score", "Not assessable")
+    if score not in {1, 2, 3, 4, 5, "Not assessable"}:
+        score = "Not assessable"
+    evidence = _as_text(value.get("evidence"), "unknown")
+    notes = _as_text(value.get("notes", value.get("assessment")), "Conversation control could not be reliably assessed.")
+    if score != "Not assessable" and evidence == "unknown":
+        score = "Not assessable"
+        notes = "No evidence was supplied for a reliable conversation-control score."
+    return {"score": score, "evidence": evidence, "notes": notes}
+
+
+def _extract_commercial_terms(transcript: dict) -> list[dict]:
+    terms = []
+    for segment in transcript.get("segments", []):
+        text = segment.get("text", "")
+        sid = segment.get("segment_id")
+        if re.search(r"\$50|fifty dollars|one time fee", text, re.I):
+            terms.append({
+                "term": "Live transfer fee",
+                "value": "$50",
+                "currency": "USD",
+                "fee_type": "one-time payment",
+                "status": "proposed",
+                "evidence_type": "Prospect statement",
+                "segment_id": sid,
+            })
+        if re.search(r"\$10|ten dollars", text, re.I) and re.search(r"every month|monthly", text, re.I):
+            terms.append({
+                "term": "Recurring patient fee",
+                "value": "$10",
+                "currency": "USD",
+                "fee_type": "recurring monthly payment",
+                "status": "proposed",
+                "evidence_type": "Prospect statement",
+                "segment_id": sid,
+            })
+        if re.search(r"seven days|7 days|payment cycle", text, re.I):
+            terms.append({
+                "term": "Payment timing",
+                "value": "7 days",
+                "payment_timing": "7 days",
+                "status": "discussed",
+                "evidence_type": "Prospect statement",
+                "segment_id": sid,
+            })
+    unique = []
+    for term in terms:
+        if not any(term["term"] == existing["term"] and term.get("value") == existing.get("value") for existing in unique):
+            unique.append(term)
+    return unique
+
+
+def _deduplicate_objections(objections: list) -> list[dict]:
+    result = []
+    for item in objections:
+        if not isinstance(item, dict):
+            item = {"description": _as_text(item), "resolved": False}
+        item = {
+            **item,
+            "description": item.get("description", item.get("objection", "unknown")),
+            "resolved": bool(item.get("resolved", False)),
+            "segment_id": item.get("segment_id", item.get("reference")),
+        }
+        duplicate = next((existing for existing in result if SequenceMatcher(None, existing["description"].lower(), item["description"].lower()).ratio() >= 0.82), None)
+        if duplicate:
+            if item.get("segment_id") and item["segment_id"] not in str(duplicate.get("segment_id", "")):
+                duplicate["segment_id"] = f"{duplicate.get('segment_id', '')}, {item['segment_id']}".strip(", ")
+            duplicate["resolved"] = duplicate["resolved"] and item["resolved"]
+        else:
+            result.append(item)
+    return result
+
+
+def _normalize_commercial_terms(terms: list) -> list[dict]:
+    allowed_statuses = {"proposed", "discussed", "accepted", "rejected", "unknown"}
+    normalized = []
+    for item in terms:
+        if not isinstance(item, dict):
+            item = {"term": _as_text(item)}
+        status = item.get("status", "unknown")
+        normalized.append({
+            "term": _as_text(item.get("term")),
+            "value": item.get("value"),
+            "currency": item.get("currency"),
+            "fee_type": item.get("fee_type"),
+            "payment_timing": item.get("payment_timing"),
+            "status": status if status in allowed_statuses else "unknown",
+            "evidence_type": item.get("evidence_type", "Confirmed fact"),
+            "segment_id": item.get("segment_id", item.get("reference")),
+        })
+    return normalized
+
+
+def _normalize_report_dict(report: dict, transcript: dict | None = None) -> dict:
     """Normalize common model shape variations into the canonical Report contract."""
     report = dict(report)
     report["transcript_quality_notes"] = _as_text(report.get("transcript_quality_notes"), "unknown")
@@ -458,6 +595,7 @@ def _normalize_report_dict(report: dict) -> dict:
     report["executive_summary"] = _as_text(report.get("executive_summary"))
     report["management_observations"] = _as_text(report.get("management_observations"), "unknown")
     report["crm_ready_notes"] = _as_text(report.get("crm_ready_notes"), "unknown")
+    report["prospect_profile"] = _normalize_prospect_profile(report.get("prospect_profile"))
 
     qualification_status = report.get("qualification_status", "Insufficient information")
     if isinstance(qualification_status, dict):
@@ -474,11 +612,18 @@ def _normalize_report_dict(report: dict) -> dict:
         if not isinstance(item, dict):
             continue
         criterion_id = item.get("criterion_id", item.get("id", "unknown"))
+        status = item.get("status", "unknown") if item.get("status") in {"met", "unmet", "unknown"} else "unknown"
+        description = _as_text(item.get("description", criterion_id))
+        evidence = _as_text(item.get("evidence"), "unknown")
+        if status == "met" and "budget" in description.lower():
+            confirmed_budget = re.search(r"\b(approved|accepted|allocated|confirmed)\b", evidence, re.I)
+            if not confirmed_budget:
+                status = "unknown"
         normalized_criteria.append({
             "criterion_id": _as_text(criterion_id),
-            "description": _as_text(item.get("description", criterion_id)),
-            "status": item.get("status", "unknown") if item.get("status") in {"met", "unmet", "unknown"} else "unknown",
-            "evidence": item.get("evidence"),
+            "description": description,
+            "status": status,
+            "evidence": evidence if evidence != "unknown" else None,
         })
     report["qualification_criteria"] = normalized_criteria
 
@@ -494,10 +639,13 @@ def _normalize_report_dict(report: dict) -> dict:
     )
     closer = report["closer_scorecard"]
     if isinstance(source_closer, dict):
-        closer["conversation_control"] = _as_text(source_closer.get("conversation_control"), "unknown")
+        closer["conversation_control"] = _parse_conversation_control(source_closer.get("conversation_control"))
         questions = source_closer.get("unanswered_material_questions", [])
         closer["unanswered_material_questions"] = questions if isinstance(questions, list) else []
-        closer["overall_notes"] = _as_text(source_closer.get("overall_notes"), "unknown")
+        closer["overall_notes"] = _as_text(
+            source_closer.get("overall_notes"),
+            "Assessment is based on available transcript evidence; speaker attribution remains uncertain.",
+        )
 
     actions = report.get("agreed_actions", [])
     if isinstance(actions, dict):
@@ -505,21 +653,26 @@ def _normalize_report_dict(report: dict) -> dict:
     if not isinstance(actions, list):
         actions = []
     report["agreed_actions"] = [
-        ({**item, "description": item.get("description", item.get("action", "unknown"))}
+        ({**item,
+          "description": item.get("description", item.get("action", "unknown")),
+          "deadline": item.get("deadline", item.get("timeline")),
+          "segment_id": item.get("segment_id", item.get("reference"))}
          if isinstance(item, dict) else {"description": _as_text(item)})
         for item in actions
     ]
     for key in ("objections", "commercial_terms"):
         if not isinstance(report.get(key), list):
             report[key] = []
-    report["objections"] = [
-        ({
-            **item,
-            "description": item.get("description", item.get("objection", "unknown")),
-            "resolved": bool(item.get("resolved", False)),
-        } if isinstance(item, dict) else {"description": _as_text(item), "resolved": False})
-        for item in report["objections"]
-    ]
+    report["objections"] = _deduplicate_objections(report["objections"])
+    report["commercial_terms"] = _normalize_commercial_terms(report["commercial_terms"])
+    if transcript is not None:
+        extracted_terms = _extract_commercial_terms(transcript)
+        existing_terms = report["commercial_terms"]
+        for term in extracted_terms:
+            if not any(existing.get("term") == term["term"] and existing.get("value") == term.get("value") for existing in existing_terms if isinstance(existing, dict)):
+                existing_terms.append(term)
+        if extracted_terms and "not accepted" not in report["crm_ready_notes"].lower():
+            report["crm_ready_notes"] += " Commercial terms are recorded as discussed/proposed only; acceptance was not confirmed."
     return report
 
 

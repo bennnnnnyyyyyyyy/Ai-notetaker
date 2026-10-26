@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Add generalized reporting for unconfigured RPM meetings
+
+**Objective.** Support meetings such as RPM that do not belong to a saved campaign.
+
+**Actions Completed.** Changed the analysis prompts so a missing campaign selects a universal sales-meeting rubric instead of flagging the whole report as incomplete. General discovery, presentation, objection handling, qualification, and closing behavior are now scored when transcript evidence supports them; only campaign-specific criteria remain unknown. Re-ran the live RPM meeting analysis without a campaign.
+
+**System Result.** A validated report version 2 was persisted. It produced opener scores of 4 / not assessable / not assessable / 2 and closer scores of 4 / 3 / 3 / 3 / 2. Qualification remains `Potential fit — unconfirmed`; outcome remains `Interested — no confirmed next meeting`. The original version 1 was retained.
+
+**Safety Status.** No campaign was invented and no campaign-specific payer or clinical claims were added. The report remains evidence-bound to the transcript.
+
 ## 2026-10-26 — Complete live Meet capture, transcription, and Gemini report
 
 **Objective.** Verify the full supervised workflow on an authorized live meeting after the Meet participant had muted its microphone.
@@ -396,3 +406,27 @@ The previous scaffold campaign `cgm_healthcare` remains in SQLite for old refere
 **System Result.** Future changes have explicit locations for current state, target state, working notes, historical evidence, and reviews.
 
 **Safety Status.** Documentation and local agent guidance only. No production systems, external services, meeting recordings, or credentials changed.
+## 2026-10-26 — Harden evidence quality for generalized reports
+
+**Objective.** Address the report-quality review for the live RPM-style meeting without requiring a saved campaign or making unsupported sales claims.
+
+**Actions Completed.** Added deterministic normalization for nested prospect profiles, legacy serialized conversation-control output, action/reference fields, and objection references. Numeric scorecard values now require criterion-specific evidence and rationale; otherwise they are downgraded to `Not assessable` with an explicit review reason. Added transcript-backed extraction of the `$50` one-time fee, `$10` recurring monthly fee, and seven-day payment timing with segment IDs and tentative statuses. Budget discussion is no longer normalized as confirmed budget without explicit approval language. Added objection deduplication that merges near-identical entries while preserving distinct concerns. Added three regression tests using mocked/local fixture data; no external model call was used.
+
+**System Result.** The saved live report fixture validates through the repaired path. It produces two distinct objections, preserves unknown speaker attribution, and returns three structured commercial terms. The report remains generalized when `campaign_id` is absent.
+
+**Verification.** `py -3 -m compileall -q backend tests`; `py -3 -m pytest -q` → 14 passed; FastAPI import passed; saved report fixture validation passed; `git diff --check` passed.
+
+**Safety Status.** No recording, transcript, credential, browser profile, database, or external service was modified. No paid API or new model download was used. The deterministic validation was run against the existing local report/transcript only.
+## 2026-10-26 — Validate repaired RPM report end to end
+
+**Objective.** Reprocess meeting `1bd6a8ba-9951-4c2e-859b-6e8bcf91f4f1` through the repaired report path and verify versioning, evidence, schema, API retrieval, and UI limitations.
+
+**Actions Completed.** Inspected the normal analysis save path and report retrieval endpoint. Created deterministic report v3, found that the broad recurring-term matcher and inherited CRM wording needed tightening, then corrected the matcher and generated report v4. v1, v2, v3, and v4 remain preserved. v4 is stored as `data/reports/1bd6a8ba-9951-4c2e-859b-6e8bcf91f4f1_v4.json` and SQLite status is `validated`.
+
+**Verified Result.** v4 contains exactly three transcript-backed commercial terms: `$50` one-time fee at `seg_0077`, `$10` monthly fee at `seg_0080`, and seven-day payment timing at `seg_0107`. The fees are `proposed`; the payment timing is `discussed`. CRM notes now state that acceptance was not confirmed. Outcome remains `Interested — no confirmed next meeting`; the prospect’s follow-up is represented as tentative, not a booked meeting. Two distinct objections remain after deduplication. All numeric scorecard fields are conservatively `Not assessable` with explanatory notes because the source report did not provide sufficient criterion-specific rationale; speaker identity remains unknown.
+
+**Verification.** v2 preservation and v4 Pydantic validation passed. Authenticated `GET /api/v1/reports/meetings/<id>/report` returned HTTP 200, version 4, status `validated`, and nested conversation-control/commercial-term fields. `py -3 -m compileall -q backend tests`; `py -3 -m pytest -q` → 14 passed; FastAPI import passed; `node --check frontend/app.js` passed; `git diff --check` passed.
+
+**Remaining Defect.** Static inspection confirmed the current meeting-detail dashboard renders meeting status, controls, and export only; it does not render the retrieved report fields. API retrieval passes, but dashboard report rendering is not yet verified and should be the next UI task.
+
+**Safety Status.** No Gemini or other paid/external model call was made. No original recording, transcript, v1/v2 report, CRM, email, meeting, or external sheet was changed.

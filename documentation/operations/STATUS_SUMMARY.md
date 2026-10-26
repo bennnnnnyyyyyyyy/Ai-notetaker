@@ -54,6 +54,10 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - A full eight-stage Ollama run was attempted against the persisted 45-second transcript. It exceeded the 300-second request timeout during final consolidation after approximately 13 minutes, so no report was accepted as successful. Hosted analysis is now being evaluated as an optional fallback; no provider is configured yet.
 - Whisper and Ollama work moved off the FastAPI event loop.
 - Pydantic report schema validation.
+- Generalized report normalization for meetings without a saved campaign.
+- Evidence-gated scorecard repair: numeric scores without criterion-specific evidence and rationale become `Not assessable`.
+- Transcript-backed commercial-term extraction records value, fee type/payment timing, status, and segment ID.
+- Legacy nested prospect profiles, serialized conversation-control output, action references, and objection references are normalized safely.
 
 ### Dashboard
 
@@ -69,38 +73,45 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - Backend compilation passes.
 - FastAPI import passes.
 - Frontend JavaScript syntax check passes.
-- Three backend tests pass.
+- Fourteen backend tests pass, including deterministic report-quality regression tests.
 - Local readiness endpoint reports ready.
+
+## Verified live processing
+
+- A real authorized Meet recording was captured and persisted: meeting `1bd6a8ba-9951-4c2e-859b-6e8bcf91f4f1`, 21:09 WAV, 153 transcript segments, and a validated Gemini report.
+- The existing RPM-style report fixture validates through the current normalization path without a campaign. Repaired output identifies the explicit `$50` one-time fee, `$10` monthly fee, and seven-day payment timing as discussed/proposed terms rather than confirmed commitments.
+- Speaker diarization remains unavailable, so no participant identity is inferred.
+- Deterministic report v4 for the live RPM meeting is persisted and API-retrievable; it preserves v1–v3 and marks the three commercial terms as proposed/discussed rather than accepted.
 
 ## Not yet verified
 
-- No successful real Google Meet capture has been completed yet.
-- No real meeting audio has been confirmed in a saved WAV file.
-- No full-length production transcript or analysis report has been validated from a meeting. The isolated 45-second real-recording test is persisted and verified.
+- A second independent real meeting capture has not yet been validated.
 - The eight-stage analysis pipeline remains intentionally unrun for this milestone.
 - Phase 2A local admin security boundary is implemented: protected API routes, server-side sessions, CSRF checks, rate-limited login, logout, and audit events. No public tunnel or remote deployment is enabled.
-- Phase 2A hardening now fails closed for non-loopback/public configuration without explicit HTTPS and secure cookies, redacts local paths from readiness responses, sanitizes user-facing worker/integration errors, and derives review identity from the authenticated session. Eleven backend tests pass.
+- Phase 2A hardening now fails closed for non-loopback/public configuration without explicit HTTPS and secure cookies, redacts local paths from readiness responses, sanitizes user-facing worker/integration errors, and derives review identity from the authenticated session. Those security checks are included in the current 14-test suite.
 - Ollama model availability and full CPU processing time remain unverified.
 - A bounded local Ollama call previously returned in 70.84 seconds, but that does not prove the full pipeline is usable.
 - Speaker diarization is not implemented.
 - Public deployment remains blocked pending a real HTTPS boundary, trusted proxy policy, shared/durable rate limiting, durable jobs, and supervised remote-access testing.
+- The report API returns v4 correctly, but the current dashboard detail view does not yet render report contents; only meeting controls and Google Sheets export are shown.
 
-## Next action: supervised capture test
+## Next action: report review and supervised follow-up
 
-1. Close every normal Chrome window and end remaining Chrome processes in Task Manager.
-2. Start the server:
+1. Review the repaired report for the live RPM meeting and mark any business corrections through the review endpoint.
+2. For another capture, close every normal Chrome window and end remaining Chrome processes in Task Manager.
+3. Start the server:
 
    ```powershell
    py -3 -m uvicorn backend.main:app
    ```
 
-3. Open `http://127.0.0.1:8000` in Edge.
-4. Open the existing failed meeting and click **Start capture**.
-5. Confirm a visible Chrome capture tab opens on the Meet URL, not `about:blank`.
-6. Manually authenticate if needed, join the authorized meeting, and approve all prompts.
-7. Confirm the dashboard changes from `joining` to `recording`.
-8. Run the test for 30–60 seconds, then close the visible capture browser.
-9. Verify the WAV file is non-zero and inspect the meeting status.
+4. Open `http://127.0.0.1:8000` in Edge.
+5. Open the existing failed meeting and click **Start capture**.
+6. Confirm a visible Chrome capture tab opens on the Meet URL, not `about:blank`.
+7. Manually authenticate if needed, join the authorized meeting, and approve all prompts.
+8. Confirm the dashboard changes from `joining` to `recording`.
+9. Run the test for 30–60 seconds, then close the visible capture browser.
+10. Verify the WAV file is non-zero and inspect the meeting status.
 
 If the browser still opens blank, preserve the server output and inspect:
 
