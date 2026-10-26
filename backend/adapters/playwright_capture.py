@@ -20,7 +20,7 @@ import asyncio
 from pathlib import Path
 from typing import Optional
 
-from playwright.async_api import async_playwright, Browser, Page
+from playwright.async_api import async_playwright, Browser, Page, Error as PlaywrightError
 
 from backend.adapters.base_capture import BaseCaptureAdapter
 from backend.config import settings
@@ -85,18 +85,32 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
             "headless": False,
             "args": launch_args,
         }
-        if settings.browser_profile_path:
-            # Use the existing signed-in Chrome profile
-            launch_args.append(f"--profile-directory={settings.browser_profile_name}")
-            self._browser = await self._playwright.chromium.launch_persistent_context(
-                user_data_dir=settings.browser_profile_path,
-                headless=False,
-                args=launch_args,
-            )
-            self._page = self._browser.pages[0] if self._browser.pages else await self._browser.new_page()
-        else:
-            self._browser = await self._playwright.chromium.launch(**browser_args)
-            self._page = await self._browser.new_page()
+        browser_executable = settings.resolve_browser_executable_path()
+        if browser_executable:
+            browser_args["executable_path"] = browser_executable
+        try:
+            if settings.browser_profile_path:
+                # Use the existing signed-in Chrome profile. Chrome must be
+                # closed first because its profile lock cannot be shared.
+                launch_args.append(f"--profile-directory={settings.browser_profile_name}")
+                persistent_args = {
+                    "user_data_dir": settings.browser_profile_path,
+                    "headless": False,
+                    "args": launch_args,
+                }
+                if browser_executable:
+                    persistent_args["executable_path"] = browser_executable
+                self._browser = await self._playwright.chromium.launch_persistent_context(**persistent_args)
+                self._page = self._browser.pages[0] if self._browser.pages else await self._browser.new_page()
+            else:
+                self._browser = await self._playwright.chromium.launch(**browser_args)
+                self._page = await self._browser.new_page()
+        except PlaywrightError as exc:
+            self._status = "failed"
+            raise RuntimeError(
+                "Chrome profile could not be opened. Close every Chrome window, "
+                "wait a few seconds, and retry the capture."
+            ) from exc
 
         logger.info("Navigating to %s", meeting_url)
         await self._page.goto(meeting_url, wait_until="domcontentloaded")

@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     # Browser
     browser_profile_path: str = ""
     browser_profile_name: str = "Default"
+    browser_executable_path: str = ""
 
     # Audio capture
     audio_device_name: str = "CABLE Output (VB-Audio Virtual Cable)"
@@ -72,6 +73,21 @@ class Settings(BaseSettings):
         )
         if user_local_candidates:
             return str(user_local_candidates[0])
+        return None
+
+    def resolve_browser_executable_path(self) -> str | None:
+        """Prefer the installed Chrome that owns the configured profile."""
+        configured = Path(self.browser_executable_path)
+        if configured.is_file():
+            return str(configured)
+        candidates = (
+            Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+            Path(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
+            Path.home() / "AppData/Local/Google/Chrome/Application/chrome.exe",
+        )
+        for candidate in candidates:
+            if candidate.is_file():
+                return str(candidate)
         return None
 
 

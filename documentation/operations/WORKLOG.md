@@ -1,5 +1,25 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Use installed Chrome for configured profile
+
+**Objective.** Resolve repeated capture startup failures after all normal Chrome windows had been closed.
+
+**Actions Completed.** Reproduced the failure with a direct Playwright launch. Bundled Playwright Chromium exited when opening the existing Chrome User Data directory, while the installed Google Chrome executable opened it successfully. Updated configuration to auto-detect installed Chrome and updated the persistent-context launch to use it when available.
+
+**System Result.** The next capture attempt should open the authorized Chrome profile visibly. The user must still keep Chrome closed before starting, use Edge for the dashboard, and manually approve Meet admission/permissions.
+
+**Safety Status.** No credentials or cookies were inspected or copied. No meeting was joined and no recording was created.
+
+## 2026-10-26 — Diagnose first profile launch failure
+
+**Objective.** Diagnose why the first configured-profile capture did not open a visible meeting browser.
+
+**Actions Completed.** Inspected the meeting row, process list, and Playwright error. Confirmed the configured Chrome User Data profile was already in use by running Chrome processes, causing `launch_persistent_context` to close immediately. Added a user-facing error explaining the profile-lock requirement and documented the retry procedure.
+
+**System Result.** The failure is environmental and recoverable: close all Chrome windows, wait for Chrome processes to exit, then retry the same meeting capture.
+
+**Safety Status.** No credentials were inspected, no browser was force-closed, and no recording was created.
+
 ## 2026-10-26 — Apply local browser profile configuration
 
 **Objective.** Resolve the dashboard readiness warning after the user supplied the browser and audio settings.
