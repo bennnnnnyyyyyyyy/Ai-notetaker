@@ -1,104 +1,102 @@
-# Implementation Plan: AI Sales Intelligence & Connectors
+# Implementation Plan: Capture, Sales Intelligence & Expert Knowledge Base
 
-## 1. System Objective & Goal Alignment
+## 1. System Constraints & Hardware Profile
 
-Prime Ad Meeting Intelligence is a zero-cost, local-first meeting observer, note-taker, and sales analyst designed to operate as a local alternative to Read AI or Otter:
+Before downloading models or implementing complex pipelines, the system hardware was inspected:
+
+| Resource | Specification | Constraint / Implication |
+|---|---|---|
+| **CPU** | Intel Core i5-6500 @ 3.20 GHz (4 cores, 4 threads) | All local AI inference runs on CPU. Inference speed is resource-bound. |
+| **GPU** | Intel HD Graphics 530 (Integrated) | No CUDA / discrete VRAM. GPU acceleration is not available. |
+| **RAM** | 15.66 GB Total, **4.93 GB Free** | Models must fit within available free RAM without swapping. |
+| **Disk** | 118.6 GB Total, **13.8 GB Free** | Strict storage budget. Large model downloads risk filling disk. |
+
+---
+
+## 2. Refined Milestone Roadmap
 
 ```text
-[Inbound Booking / Calendar] (Cal.com / Activepieces / Zapier)
-              │
-              ▼
-    [FastAPI Orchestrator]
-              │
-       ┌──────┴──────┐
-       ▼             ▼
-[Playwright]    [FFmpeg Loopback]
-(Auto-join)     (VB-Audio Cable)
-       │             │
-       └──────┬──────┘
-              ▼
-   [Local Audio (.wav)]
-              │
-              ▼
-  [faster-whisper Engine] (Local CPU/GPU)
-              │
-              ▼
- [Timestamped Segments JSON]
-              │
-              ▼
- [8-Stage Ollama AI Pipeline] (phi3:mini / llama3.2)
-   ├─ 1. Transcript Quality
-   ├─ 2. Fact & Evidence Extraction
-   ├─ 3. Campaign Qualification (DME / CGM / Roofing)
-   ├─ 4. Opener Scorecard
-   ├─ 5. Closer Scorecard
-   ├─ 6. Deal Outcome & Pipeline Stage
-   ├─ 7. Report Consolidation
-   └─ 8. Pydantic Schema Validation
-              │
-       ┌──────┴──────────────┐
-       ▼                     ▼
-[Dashboard UI]       [Outbound Connectors]
-(Review/Transcript)  (Activepieces / Webhooks / CRM)
+[Milestone 1: Capture Proof of Concept]
+  Verify two-way audio (host mic + remote participant) via loopback
+        │
+        ▼
+[Milestone 2: Local Transcription Pipeline]
+  faster-whisper CPU benchmark with audio fixture & Meet recording
+        │
+        ▼
+[Milestone 3: Expert Knowledge Base & Evidence-Based Sales Intelligence]
+  - Persistent Expert Knowledge Base (DME/CGM practical rules & objection playbooks)
+  - Model benchmarking on CPU against transcripts
+  - 8-stage evidence-linked analysis (strictly grounded in segment IDs)
+        │
+        ▼
+[Milestone 4: Local Review & Correction Dashboard]
+  Interactive transcript scrubbing, scorecard inspection, human corrections
+        │
+        ▼
+[Milestone 5: Deferred Integrations (Future Phase)]
+  Cal.com, Activepieces, Zapier, and CRM sync — deferred until local workflow is proven
 ```
 
 ---
 
-## 2. Phase Breakdown
+## 3. Milestone Details
 
-### Phase 1: Capture & Transcription Verification (Current Milestone)
-* **Goal**: Confirm end-to-end capture produces a real audio file and generates timestamped text segments.
-* **Tasks**:
-  1. **Run supervised Meet capture**: Confirm automated popup dismissal, mic/camera mute, and "Join now" click.
-  2. **Verify audio routing**: Ensure both host and prospect speech are audible in `data/recordings/<id>.wav`.
-  3. **Run faster-whisper**: Run `run_transcription` to convert WAV to segment JSON in `data/transcripts/` and populate `transcript_segments` SQLite table.
-  4. **Verify transcript segment schema**: Ensure each segment has `segment_id` (e.g. `seg_0001`), `start_ms`, `end_ms`, and `text`.
+### Milestone 1 — Capture Proof of Concept (Immediate Focus)
+* **Goal**: Prove that this PC reliably captures **both** the user's microphone and the remote meeting participants in a real, authorized Google Meet call.
+* **Requirements**:
+  1. Automated pre-join navigation and join execution (implemented in `playwright_capture.py`).
+  2. Audio routing validation: Verify `CABLE Output (VB-Audio Virtual Cable)` loopback records two-way conversation into `data/recordings/<id>.wav`.
+  3. Validate audio file: Confirm non-zero duration, valid 16kHz mono WAV headers, and clear speech playback from both parties.
+  4. Document the exact findings in `WORKLOG.md`.
 
-### Phase 2: Local AI Sales Intelligence Engine (Milestone 3)
-* **Goal**: Execute the 8-stage sales analysis pipeline using local Ollama without external API fees.
-* **Tasks**:
-  1. **Ollama Model Setup**: Pull `phi3:mini` (or `llama3.2`) locally:
-     ```powershell
-     ollama pull phi3:mini
-     ```
-  2. **Sequential 8-Stage Execution**:
-     * **Stage 1 (Transcript Quality)**: Flag missing audio or poor quality.
-     * **Stage 2 (Fact Extraction)**: Extract prospect pain points, budget, current process, explicit commitments with transcript segment references.
-     * **Stage 3 (Campaign Qualification)**: Apply campaign rules (`dme_lead_generation.yaml`, `cgm_patient_acquisition.yaml`, `roofing_appointment_setting.yaml`) to output a qualification fit.
-     * **Stage 4 (Opener Scorecard)**: Score booking quality, info accuracy, and expectation setting (1–5).
-     * **Stage 5 (Closer Scorecard)**: Score discovery, presentation, objection handling, and closing effectiveness (1–5).
-     * **Stage 6 (Outcome & Stage)**: Assign definitive outcome (Closed, Qualified, Follow-up, Unqualified, Lost).
-     * **Stage 7 (Consolidation)**: Assemble complete JSON report.
-     * **Stage 8 (Schema Validation)**: Validate against `Report` Pydantic model.
-  3. **Dashboard Report View**:
-     * Add report viewer in `frontend/index.html` and `frontend/app.js` displaying:
-       - Qualification badges & deal outcome.
-       - Opener and Closer scorecards with evidence quotes.
-       - Interactive transcript with clickable timestamp navigation.
-       - Human review and correction form.
+### Milestone 2 — Local Transcription Pipeline
+* **Goal**: Validate `faster-whisper` on the i5-6500 CPU without crashing or exhausting RAM.
+* **Requirements**:
+  1. Test against a short audio fixture first before processing full-length calls.
+  2. Measure CPU utilization, processing speed (Real-Time Factor), and memory usage for the `base` model.
+  3. Verify timestamped segments JSON structure (`segment_id`, `start_ms`, `end_ms`, `text`).
+  4. Populate SQLite `transcripts` and `transcript_segments` tables.
 
-### Phase 3: Connectors & Integrations
-* **Goal**: Eliminate manual meeting registration and automate post-call reporting to CRM/workflows.
-* **Tasks**:
-  1. **Inbound Booking Webhooks (Activepieces / Zapier / Cal.com)**:
-     * Add endpoint `POST /api/v1/integrations/booking-webhook`.
-     * Receives event payloads from Cal.com, Zapier, or Activepieces when a demo is booked (e.g., DMEDESK).
-     * Extracts `meeting_url`, `scheduled_at`, `campaign_id`, `opener_name`, `closer_name`, and `pre_booking_notes`.
-     * Automatically registers the meeting in SQLite and schedules capture.
-  2. **Google Calendar Auto-Discovery (Optional)**:
-     * Read scheduled Google Meet links directly from the user's Google Calendar for the day.
-  3. **Outbound Report Dispatcher (Activepieces / CRM Webhook)**:
-     * Add configurable webhook dispatch on `meeting.status == 'completed'`.
-     * Sends validated report JSON (qualification status, scores, summary, action items) to Activepieces/Zapier.
-     * Enables automatic sync to CRM (GoHighLevel, HubSpot, Close) without storing CRM credentials in the local app.
+### Milestone 3 — Expert Knowledge Base & Sales Analysis
+* **Goal**: Build an evidence-based sales intelligence system grounded in practical DME/CGM sales expertise.
+* **Components**:
+  1. **Expert Knowledge Base (First-Class Feature)**:
+     - Local YAML/Markdown knowledge files capturing practical sales experience:
+       - DME Lead Generation qualification questions, pain points, and objections.
+       - CGM Patient Acquisition eligibility criteria, doctor referral friction, and payer rules.
+       - Roofing Appointment Setting homeowner confirmation criteria.
+       - Closer red flags and conversation control benchmarks.
+     - Influences qualification criteria and scorecard rubrics directly.
+  2. **Model Evaluation on CPU**:
+     - Do not pre-commit to a single large model.
+     - Evaluate lightweight candidates (`phi3:mini`, quantized variants) on the i5-6500 CPU for output quality, prompt adherence, and runtime latency using real transcript segments.
+  3. **Strict 8-Stage Pipeline**:
+     - Require transcript segment ID citations for every material finding.
+     - If a detail was not mentioned, mark as `unknown` or `not_assessable` — strictly no fabrication.
+     - Pydantic schema validation.
+
+### Milestone 4 — Local Review & Report Interface
+* **Goal**: Provide a clean interface for human oversight.
+* **Requirements**:
+  1. Transcript playback with clickable segment seeking.
+  2. Opener and Closer scorecard review.
+  3. Form for human corrections, reviewer notes, and status advancement.
+
+### Milestone 5 — Deferred External Integrations
+* **Policy**: External automation is strictly deferred.
+* Inbound booking webhooks (Cal.com / Zapier / Activepieces) and outbound CRM synchronizations will only be introduced once the local capture, transcription, and report generation workflow has been proven reliable.
 
 ---
 
-## 3. Immediate Next Execution Steps
+## 4. Current Work State & Truth Report
 
-1. **Pull Ollama model**:
-   Execute `ollama pull phi3:mini` so the local analysis engine has its model ready.
-2. **Conduct the real Meet test recording**:
-   Start capture on a test call, speak 20 seconds, end the meeting, and verify transcript + report generation.
-3. **Build the Inbound Webhook Connector**:
-   Implement `POST /api/v1/integrations/booking-webhook` so Cal.com and Activepieces can register meetings automatically.
+| Area | Status | Evidence / Notes |
+|---|---|---|
+| **Hardware Profile** | **Checked** | i5-6500 (4 cores), Intel HD 530 GPU, 4.9 GB free RAM, 13.8 GB free disk space. |
+| **Capture Adapter** | **Implemented** | Automated Meet pre-join dismiss, mic/cam mute, "Join now" click, and lifecycle tracking in `backend/adapters/playwright_capture.py`. |
+| **Server & Dashboard** | **Running** | FastAPI backend running on `http://127.0.0.1:8000`. Readiness shows all subsystems ready. |
+| **Real Meet Two-Way Audio** | **Pending** | Needs supervised test to confirm both microphone and remote participant voices are audible in the generated WAV. |
+| **Transcription** | **Pending** | `FasterWhisperTranscriber` code exists; CPU benchmark with real/fixture audio pending. |
+| **Local LLM Model** | **Postponed** | No model downloaded yet. Awaiting audio and transcription proof. |
+| **External Integrations** | **Deferred** | Scope narrowed to local core product first. |
