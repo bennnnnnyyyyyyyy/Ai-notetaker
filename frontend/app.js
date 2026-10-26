@@ -26,7 +26,7 @@ async function api(path, options = {}) {
 
 function meetingCard(meeting) {
   const date = meeting.created_at ? new Date(meeting.created_at).toLocaleString() : '';
-  return `<button class="meeting-card" data-meeting-id="${meeting.id}">
+  return `<button class="meeting-card" aria-label="Open ${escapeHtml(meeting.meeting_type)} meeting, status ${escapeHtml(meeting.status)}" data-meeting-id="${meeting.id}">
     <div><strong>${escapeHtml(meeting.meeting_type)}</strong><span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></div>
     <div class="muted">${escapeHtml(meeting.url)}</div><div class="muted">${escapeHtml(date)}</div>
   </button>`;
@@ -69,7 +69,7 @@ async function openMeeting(id) {
   const meeting = await api(`/meetings/${id}`);
   $('detail-content').innerHTML = `<h1>Meeting</h1><div class="form-card">
     <p><strong>Type:</strong> ${escapeHtml(meeting.meeting_type)}</p>
-    <p><strong>Status:</strong> <span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></p>
+    <p role="status" aria-live="polite"><strong>Status:</strong> <span class="status status-${meeting.status}">${escapeHtml(meeting.status)}</span></p>
     <p><strong>URL:</strong> <a href="${escapeHtml(meeting.url)}" target="_blank" rel="noopener">${escapeHtml(meeting.url)}</a></p>
     ${meeting.error_message ? `<p class="form-error">${escapeHtml(meeting.error_message)}</p>` : ''}
     ${['pending', 'failed'].includes(meeting.status) ? `<button class="btn-primary" id="start-${meeting.id}">Start capture</button>` : ''}
@@ -108,3 +108,9 @@ $('new-meeting-form').onsubmit = async (event) => {
 };
 
 Promise.all([loadMeetings(), loadCampaigns(), loadReadiness()]).catch((error) => { $('recent-meetings').innerHTML = `<p class="form-error">${escapeHtml(error.message)}</p>`; });
+
+setInterval(() => {
+  if (state.meetings.some((meeting) => ['joining', 'waiting_for_admission', 'recording', 'processing'].includes(meeting.status))) {
+    loadMeetings().catch(() => {});
+  }
+}, 3000);

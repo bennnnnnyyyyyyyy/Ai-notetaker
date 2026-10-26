@@ -11,6 +11,7 @@ Orchestrates:
 import json
 import logging
 import uuid
+import asyncio
 from datetime import datetime
 from pathlib import Path
 
@@ -36,7 +37,7 @@ async def run_transcription(
 
     try:
         transcriber = FasterWhisperTranscriber()
-        segments = transcriber.transcribe(recording_path)
+        segments = await asyncio.to_thread(transcriber.transcribe, recording_path)
 
         # Build transcript document
         transcript_doc = {

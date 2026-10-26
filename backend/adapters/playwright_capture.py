@@ -36,6 +36,7 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         self._playwright = None
         self._page: Optional[Page] = None
         self._recording_path: Optional[Path] = None
+        self._ffmpeg_log_handle = None
         self._status: str = "idle"
 
     async def start(self, meeting_url: str, meeting_id: str) -> str:
@@ -60,13 +61,15 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
             "-ac", "1",
             str(output_path),
         ]
+        ffmpeg_log_path = Path(settings.logs_dir) / f"{meeting_id}.ffmpeg.log"
+        self._ffmpeg_log_handle = ffmpeg_log_path.open("w", encoding="utf-8")
         logger.info("Starting FFmpeg: %s", " ".join(ffmpeg_cmd))
         try:
             self._process = subprocess.Popen(
                 ffmpeg_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stderr=self._ffmpeg_log_handle,
             )
         except FileNotFoundError as exc:
             self._status = "failed"
@@ -116,8 +119,15 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
         # `domcontentloaded` can wait indefinitely on Meet's application shell
         # and leave the user staring at about:blank. `commit` confirms that the
         # navigation started; Meet can continue loading in the visible browser.
-        await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
-        await asyncio.sleep(2)
+        try:
+            await self._page.goto(meeting_url, wait_until="commit", timeout=30_000)
+            await asyncio.sleep(2)
+        except PlaywrightError as exc:
+            self._status = "failed"
+            raise RuntimeError(
+                f"Meet navigation failed. Check the URL and network connection. "
+                f"Details: {exc}"
+            ) from exc
 
         # Detect an invalid device or an FFmpeg startup failure immediately.
         await asyncio.sleep(0.5)
@@ -159,6 +169,13 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
                 await self._playwright.stop()
             except Exception:
                 pass
+
+        if self._ffmpeg_log_handle:
+            try:
+                self._ffmpeg_log_handle.close()
+            except Exception:
+                pass
+            self._ffmpeg_log_handle = None
 
         self._status = "meeting_ended"
         return duration

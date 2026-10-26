@@ -1,16 +1,23 @@
-from pydantic import BaseModel, HttpUrl
-from typing import Optional
+from pydantic import BaseModel, HttpUrl, field_validator
+from typing import Literal, Optional
 from datetime import datetime
 
 
 class MeetingCreate(BaseModel):
-    url: str
+    url: HttpUrl
     campaign_id: Optional[str] = None
-    meeting_type: str  # discovery | negotiation | onboarding
+    meeting_type: Literal["discovery", "negotiation", "onboarding"]
     opener_name: Optional[str] = None
     closer_name: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     pre_booking_notes: Optional[str] = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_meet_url(cls, value: HttpUrl) -> HttpUrl:
+        if value.scheme != "https" or value.host not in {"meet.google.com", "meet.googleusercontent.com"}:
+            raise ValueError("URL must be an HTTPS Google Meet URL")
+        return value
 
 
 class MeetingResponse(BaseModel):

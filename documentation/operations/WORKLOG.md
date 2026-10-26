@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-26 — Implement audit fixes for capture and dashboard
+
+**Objective.** Apply the actionable fixes from both the backend and frontend audits before the next authorized meeting test.
+
+**Actions Completed.** Added strict HTTPS Google Meet validation, atomic capture/retry claiming, FFmpeg per-meeting logs, zero-byte recording rejection, navigation error handling, startup recovery for interrupted jobs, non-blocking Whisper/Ollama calls, campaign-path restrictions, backend smoke tests, live dashboard status semantics, visible focus styles, responsive layouts, local font fallback, and status color tokens.
+
+**System Result.** The project now has stronger supervised-capture failure handling and a more usable dashboard. The app still requires a fully closed/dedicated authorized Chrome profile and a real manual Meet test; no successful meeting capture is claimed.
+
+**Safety Status.** No authentication, admission, or recording consent was bypassed. No browser profile, credentials, recordings, transcripts, or databases were added to Git.
+
 ## 2026-10-26 — Complete backend audit and capture handoff
 
 **Objective.** Audit the backend and return the project to the supervised real-meeting capture test.

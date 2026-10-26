@@ -25,7 +25,7 @@ async def create_meeting(
         """,
         (
             meeting_id,
-            body.url,
+            str(body.url),
             body.campaign_id,
             body.meeting_type,
             body.opener_name,
@@ -78,6 +78,21 @@ async def start_capture(
             detail=f"Cannot start capture from status '{meeting['status']}'",
         )
 
+    # Claim the meeting before scheduling the task so repeated clicks cannot
+    # start competing browser/FFmpeg workers.
+    async with db.execute(
+        """
+        UPDATE meetings
+        SET status = 'joining', error_message = NULL, updated_at = datetime('now')
+        WHERE id = ? AND status IN ('pending', 'failed')
+        """,
+        (meeting_id,),
+    ) as cur:
+        claimed = cur.rowcount
+    await db.commit()
+    if claimed != 1:
+        raise HTTPException(status_code=409, detail="Capture is already active or cannot be restarted")
+
     # Import here to avoid circular imports
     from backend.workers.capture import run_capture
     background_tasks.add_task(run_capture, meeting_id)
@@ -97,6 +112,19 @@ async def retry_meeting(
             status_code=409,
             detail=f"Only failed meetings can be retried (current: '{meeting['status']}')",
         )
+    async with db.execute(
+        """
+        UPDATE meetings
+        SET status = 'joining', error_message = NULL, updated_at = datetime('now')
+        WHERE id = ? AND status = 'failed'
+        """,
+        (meeting_id,),
+    ) as cur:
+        claimed = cur.rowcount
+    await db.commit()
+    if claimed != 1:
+        raise HTTPException(status_code=409, detail="Meeting changed before retry could start")
+
     from backend.workers.capture import run_capture
     background_tasks.add_task(run_capture, meeting_id)
     return {"detail": "Retry started", "meeting_id": meeting_id}

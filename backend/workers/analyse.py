@@ -18,6 +18,7 @@ Stages:
 import json
 import logging
 import uuid
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -101,7 +102,7 @@ async def _load_inputs(meeting_id: str, db: aiosqlite.Connection):
 
 async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict:
     llm = OllamaLLMAdapter()
-    if not llm.is_available():
+    if not await asyncio.to_thread(llm.is_available):
         raise RuntimeError(
             f"Ollama model '{settings.ollama_model}' is not available. "
             f"Run: ollama pull {settings.ollama_model}"
@@ -114,31 +115,31 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
     system_base = _build_system_prompt(meeting, campaign)
 
     # Stage 1 — quality
-    quality_notes = llm.generate(system_base, _prompt_quality(flat_text[:4000]))
+    quality_notes = await _generate(llm, system_base, _prompt_quality(flat_text[:4000]))
 
     # Stage 2 — fact extraction (chunked, then consolidated)
     facts_parts = []
     for chunk in chunks:
-        facts_parts.append(llm.generate(system_base, _prompt_facts(chunk)))
+        facts_parts.append(await _generate(llm, system_base, _prompt_facts(chunk)))
     facts_text = "\n---\n".join(facts_parts)
 
     # Stage 3 — qualification
-    qualification = llm.generate(system_base, _prompt_qualification(facts_text, campaign))
+    qualification = await _generate(llm, system_base, _prompt_qualification(facts_text, campaign))
 
     # Stage 4 — opener
-    opener = llm.generate(system_base, _prompt_opener(facts_text, meeting))
+    opener = await _generate(llm, system_base, _prompt_opener(facts_text, meeting))
 
     # Stage 5 — closer
-    closer = llm.generate(system_base, _prompt_closer(facts_text))
+    closer = await _generate(llm, system_base, _prompt_closer(facts_text))
 
     # Stage 6 — outcome
-    outcome = llm.generate(system_base, _prompt_outcome(facts_text))
+    outcome = await _generate(llm, system_base, _prompt_outcome(facts_text))
 
     # Stage 7 — consolidate into final JSON
     final_prompt = _prompt_consolidate(
         meeting, facts_text, qualification, opener, closer, outcome, quality_notes
     )
-    raw_report = llm.generate(system_base, final_prompt)
+    raw_report = await _generate(llm, system_base, final_prompt)
 
     # Stage 8 — extract and validate JSON
     report_dict = _extract_json(raw_report)
@@ -149,6 +150,11 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
     # Pydantic validation
     Report.model_validate(report_dict)
     return report_dict
+
+
+async def _generate(llm: OllamaLLMAdapter, system_prompt: str, user_prompt: str) -> str:
+    """Keep synchronous local-model inference off FastAPI's event loop."""
+    return await asyncio.to_thread(llm.generate, system_prompt, user_prompt)
 
 
 # ---------------------------------------------------------------------------

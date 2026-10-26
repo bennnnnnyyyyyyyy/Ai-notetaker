@@ -24,8 +24,8 @@
   <main class="main">
 
     <!-- ── Dashboard ────────────────────────────────────────────── -->
-    <section id="view-dashboard" class="view active">
-      <h1>Dashboard</h1>
+    <section id="view-dashboard" class="view active" aria-labelledby="dashboard-heading">
+      <h1 id="dashboard-heading">Dashboard</h1>
       <div class="stat-grid" id="stat-grid">
         <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total meetings</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-processing">—</div><div class="stat-label">Processing</div></div>
@@ -34,7 +34,7 @@
       </div>
       <div class="form-card readiness-card">
         <div class="section-heading"><h2>Local capture readiness</h2><button class="btn-secondary" id="refresh-readiness">Refresh</button></div>
-        <div id="readiness" class="muted">Checking this PC…</div>
+        <div id="readiness" class="muted" role="status" aria-live="polite">Checking this PC…</div>
       </div>
       <h2>Recent Meetings</h2>
       <div id="recent-meetings" class="meeting-list"></div>
@@ -80,7 +80,7 @@
         <div class="form-actions">
           <button type="submit" class="btn-primary">Register & Start Capture</button>
         </div>
-        <p id="form-error" class="form-error hidden"></p>
+        <p id="form-error" class="form-error hidden" role="alert" aria-live="assertive"></p>
       </form>
     </section>
 

@@ -72,6 +72,13 @@ async def run_capture(meeting_id: str) -> None:
             duration = await adapter.stop()
             logger.info("Recording stopped. Duration: %.1f s", duration)
 
+            recording_file = Path(recording_path)
+            if not recording_file.exists() or recording_file.stat().st_size == 0:
+                raise RuntimeError(
+                    "Capture ended without audio data. Check the Windows playback route "
+                    "to the configured VB-Audio device."
+                )
+
             # Save recording record
             recording_id = str(uuid.uuid4())
             await db.execute(
@@ -90,4 +97,7 @@ async def run_capture(meeting_id: str) -> None:
         except Exception as exc:
             logger.exception("Capture failed for meeting %s", meeting_id)
             await adapter.stop()
+            partial = Path(adapter._recording_path) if adapter._recording_path else None
+            if partial and partial.exists() and partial.stat().st_size == 0:
+                partial.unlink()
             await _set_status(db, meeting_id, "failed", error=str(exc))

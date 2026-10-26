@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 import aiosqlite
 
@@ -34,13 +35,19 @@ async def create_campaign(
     body: CampaignCreate,
     db: aiosqlite.Connection = Depends(get_db),
 ):
+    campaigns_root = (Path(__file__).resolve().parent.parent / "campaigns").resolve()
+    config_path = (campaigns_root / body.config_path).resolve()
+    if campaigns_root not in config_path.parents or config_path.suffix.lower() not in {".yaml", ".yml"}:
+        raise HTTPException(status_code=422, detail="Campaign config must be a YAML file under backend/campaigns")
+    if not config_path.is_file():
+        raise HTTPException(status_code=422, detail="Campaign config file does not exist")
     campaign_id = str(uuid.uuid4())
     await db.execute(
         """
         INSERT INTO campaigns (id, name, config_path, config_version)
         VALUES (?, ?, ?, ?)
         """,
-        (campaign_id, body.name, body.config_path, body.config_version),
+        (campaign_id, body.name, str(config_path), body.config_version),
     )
     await db.commit()
     async with db.execute(

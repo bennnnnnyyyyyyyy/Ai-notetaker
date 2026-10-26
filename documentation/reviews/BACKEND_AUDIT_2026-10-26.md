@@ -100,3 +100,21 @@ Scope: FastAPI routes, SQLite lifecycle, capture/transcription/analysis workers,
 5. Add automated tests around the complete capture lifecycle.
 
 This report is a review record, not evidence that a real meeting was captured successfully.
+
+## Follow-up implementation status
+
+Implemented after this audit:
+
+- HTTPS Google Meet URL validation and constrained meeting types.
+- Atomic capture/retry claiming to prevent duplicate workers.
+- FFmpeg stderr logging per meeting and zero-byte recording rejection.
+- Navigation error handling and non-blocking Whisper/Ollama calls.
+- Campaign config path restriction.
+- Startup recovery for jobs interrupted by a server stop, making them explicitly retryable.
+- Initial backend tests for health/readiness, URL validation, and campaign path safety.
+
+Still pending:
+
+- A dedicated capture-only Chrome profile or supported existing-browser connection.
+- Explicit Meet admission/lifecycle detection beyond visible browser supervision.
+- A full fixture-based capture integration test and an authorized real Meet test.

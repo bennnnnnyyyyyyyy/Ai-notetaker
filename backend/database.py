@@ -108,6 +108,7 @@ async def init_db() -> None:
     async with aiosqlite.connect(db_path) as conn:
         await conn.executescript(_DDL)
         await seed_campaigns(conn)
+        await recover_interrupted_meetings(conn)
         await conn.commit()
 
 
@@ -136,4 +137,17 @@ async def seed_campaigns(conn: aiosqlite.Connection) -> None:
     # but prevent it from being selected for new meetings.
     await conn.execute(
         "UPDATE campaigns SET active = 0 WHERE id IN ('cgm_healthcare', 'example_campaign')"
+    )
+
+
+async def recover_interrupted_meetings(conn: aiosqlite.Connection) -> None:
+    """Make jobs interrupted by a server stop explicitly retryable."""
+    await conn.execute(
+        """
+        UPDATE meetings
+        SET status = 'failed',
+            error_message = 'Capture was interrupted when the application stopped; retry is available.',
+            updated_at = datetime('now')
+        WHERE status IN ('joining', 'recording', 'processing')
+        """
     )
