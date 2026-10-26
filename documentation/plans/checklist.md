@@ -4,11 +4,11 @@ Last updated: 2026-10-26
 
 | Milestone | Status | Evidence |
 |---|---|---|
-| 1. Capture proof of concept | 🟡 Loopback device verified; authorized Meet test pending | [Capture setup](../operations/CAPTURE_SETUP.md) |
-| 2. Reliable local pipeline | 🟡 Initial lifecycle hardening implemented; fixture and real capture verification pending | [Master plan](MASTER_PLAN.md) |
-| 3. Evidence-based analysis | 📋 Planned | [Master plan](MASTER_PLAN.md) |
-| 4. Workflow hardening | 🟡 Initial validation, cleanup, status, and documentation hardening implemented | [Master plan](MASTER_PLAN.md) |
-| 5. Pilot readiness | 📋 Planned | [Master plan](MASTER_PLAN.md) |
+| 1. Capture proof of concept | 🟡 Automated join & loopback implemented; real Meet test pending | [Capture setup](../operations/CAPTURE_SETUP.md) |
+| 2. Reliable local pipeline | 🟡 Initial lifecycle hardening implemented; transcription pipeline connected | [AI & Integrations Plan](AI_AND_INTEGRATIONS_PLAN.md) |
+| 3. Evidence-based analysis | 🟡 8-stage pipeline implemented; model setup & verification pending | [AI & Integrations Plan](AI_AND_INTEGRATIONS_PLAN.md) |
+| 4. Workflow hardening | 🟡 Dynamic polling & status handling implemented | [Master plan](MASTER_PLAN.md) |
+| 5. Connectors & Ingestion | 📋 Inbound booking webhooks (Cal.com/Activepieces) planned | [AI & Integrations Plan](AI_AND_INTEGRATIONS_PLAN.md) |
 
 ## Rules
 
