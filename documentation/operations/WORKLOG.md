@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Point BD source at shared Google Sheet
+
+**Objective.** Use the actual shared BD Meetings Google Sheet as the booking source instead of the local Excel copy.
+
+**Actions Completed.** Replaced the BD adapter's local `openpyxl` source with a direct Google Sheets API read of the configured `New Meetings` worksheet and spreadsheet ID. Added a separate `spreadsheets.readonly` OAuth token path and `scripts/google_bd_sheets_auth.py`. Kept the existing Google Sheets export adapter separate, documented that the neighboring `.clasp.json` is an Apps Script project rather than this app's data bridge, and updated the UI/README source descriptions. The local `.env` now points BD authorization at the OAuth client that successfully authorized Calendar.
+
+**System Result.** The app will read booking rows from the shared Sheet visible to `meetings.dmedeskai@gmail.com`; it will not write to that Sheet. Calendar resolution still uses the separate read-only Calendar API token. The BD read-only token has not yet been created on this PC.
+
+**Verification.** Full `py -3 -m pytest -q` → 27 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. No live Sheet or Calendar API call was made.
+
+**Safety Status.** The BD Sheet remains read-only. No Apps Script deployment, Sheet mutation, Calendar mutation, or capture was performed.
+
 ## 2026-10-27 — Enable local scheduled capture
 
 **Objective.** Make the approved local meeting record behave like a Read AI-style assistant by opening capture at its scheduled time.
