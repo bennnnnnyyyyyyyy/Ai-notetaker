@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Replace BD booking table with weekly calendar
+
+**Objective.** Make the read-only BD booking source usable as a schedule rather than a spreadsheet-style table.
+
+**Actions Completed.** Replaced the booking-table renderer with a weekly calendar grid. Sheet weekday/time values now place booking events into their corresponding day and time slot; event cards carry client, company/campaign, opener, and source time. Selecting an event preserves the existing resolve → review → explicit import flow. Bookings without a usable weekday/time remain visible in a separate unscheduled section.
+
+**System Result.** Operators can scan meetings by day and time without losing any existing source, Calendar-resolution, or operator-confirmation boundary. The view remains read-only; no Calendar event is written or changed.
+
+**Verification.** `node --check frontend/app.js`; `git diff --check`.
+
+**Safety Status.** Frontend and documentation only. No Google API call, Sheet/Calendar read, browser session, capture, recording, transcript, credential, or local runtime data change was performed.
+
 ## 2026-10-27 — Make the operations UI more usable
 
 **Objective.** Address the verified static UI audit findings that could mislead operators or make common dashboard tasks harder to use.
