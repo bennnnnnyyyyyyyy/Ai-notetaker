@@ -41,7 +41,24 @@ async def create_meeting(
 @router.get("", response_model=list[MeetingResponse])
 async def list_meetings(db: aiosqlite.Connection = Depends(get_db)):
     async with db.execute(
-        "SELECT * FROM meetings ORDER BY created_at DESC"
+        """
+        SELECT * FROM meetings
+        ORDER BY
+            CASE status
+                WHEN 'joining' THEN 0
+                WHEN 'waiting_for_admission' THEN 0
+                WHEN 'recording' THEN 0
+                WHEN 'processing' THEN 0
+                WHEN 'pending' THEN 1
+                ELSE 2
+            END,
+            CASE WHEN scheduled_at IS NULL THEN 1 ELSE 0 END,
+            CASE WHEN status IN ('joining','waiting_for_admission','recording','processing','pending')
+                 THEN scheduled_at END ASC,
+            CASE WHEN status NOT IN ('joining','waiting_for_admission','recording','processing','pending')
+                 THEN scheduled_at END DESC,
+            created_at DESC
+        """
     ) as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]

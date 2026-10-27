@@ -1,5 +1,25 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Repair admin meeting ordering and Settings status
+
+**Objective.** Make the admin page reflect operational priority and replace the non-functional Settings placeholder with real local status information.
+
+**Actions Completed.** Ordered meetings by active state, then pending scheduled time, then historical scheduled time. Added authenticated `GET /api/v1/system/status` with safe non-secret configuration/readiness fields and connected the Settings view's refresh action. Added regression coverage for ordering and protected status output.
+
+**Verification.** Backend tests → 13 passed; full `py -3 -m pytest -q` → 29 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. No external API, browser, recording, or capture action was performed.
+
+**Safety Status.** Settings remains read-only. Secrets, tokens, Calendar events, Sheet rows, and meeting artifacts were not changed.
+
+## 2026-10-27 — Apply UI, scheduler, and concurrency audit fixes
+
+**Objective.** Address the current audit's valid correctness, safety, and accessibility findings without running a live capture or Google API call.
+
+**Actions Completed.** Added a visible Run/Re-run analysis action with an atomic processing claim; fixed the BD booking status element ID and added Sheet-company confirmation protection; limited scheduled capture to one active slot, marked meetings more than 20 minutes late as failed, and blocked manual starts while another capture is active. Enabled per-connection SQLite foreign keys, standardized worker timestamps to timezone-aware UTC, lazy-loaded Playwright diagnostics, and tightened credential ignore patterns. Improved UI status polling, date parsing, meeting labels, search, error handling, dynamic greeting, mobile Settings visibility, focus indicators, contrast tokens, cancelled status styling, score-grid styling, and removal of remote Google Fonts. The shared Sheet remains read-only.
+
+**Verification.** Full `py -3 -m pytest -q` → 28 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. No live browser, recording, Sheet API, Calendar API, or analysis provider call was made.
+
+**Safety Status.** Public access remains disabled. Scheduled capture still uses the visible browser and normal Google permission/admission flow. No credentials, tokens, workbook/Sheet cells, Calendar events, historical records, recordings, or reports were modified.
+
 ## 2026-10-27 — Preserve rich-text Calendar links from the shared Sheet
 
 **Objective.** Resolve the Calendar hyperlink behind a displayed meeting time such as `Tue 11:00 PM` without using the CSV copy as a source.

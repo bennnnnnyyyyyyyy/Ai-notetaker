@@ -25,6 +25,32 @@ def admin_client(monkeypatch):
         yield client
 
 
+@pytest.fixture
+def ordered_meetings_client(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "database_path", tmp_path / "ordered-meetings.db")
+    monkeypatch.setattr(settings, "admin_username", "admin")
+    monkeypatch.setattr(settings, "admin_password_hash", hash_password("correct-password"))
+    monkeypatch.setattr(settings, "scheduled_capture_enabled", False)
+    with TestClient(app) as client:
+        response = client.post("/api/v1/auth/login", json={"username": "admin", "password": "correct-password"})
+        assert response.status_code == 200
+        yield client
+
+
+def test_meetings_are_ordered_by_active_then_scheduled_time(ordered_meetings_client):
+    csrf = ordered_meetings_client.cookies.get("ai_admin_csrf")
+    headers = {"X-CSRF-Token": csrf}
+    for opener, scheduled in (("Later", "2027-01-02T10:00:00+00:00"), ("Sooner", "2027-01-02T09:00:00+00:00")):
+        response = ordered_meetings_client.post(
+            "/api/v1/meetings",
+            headers=headers,
+            json={"url": "https://meet.google.com/abc-defg-hij", "meeting_type": "discovery", "opener_name": opener, "scheduled_at": scheduled},
+        )
+        assert response.status_code == 201
+    meetings = ordered_meetings_client.get("/api/v1/meetings").json()
+    assert [meeting["opener_name"] for meeting in meetings] == ["Sooner", "Later"]
+
+
 def test_health_and_readiness_endpoints(admin_client):
     assert admin_client.get("/health").json() == {"status": "ok"}
     response = admin_client.get("/api/v1/system/readiness")
@@ -36,6 +62,10 @@ def test_health_and_readiness_endpoints(admin_client):
     assert "resolved_path" not in readiness_text
     assert "profile_dir" not in readiness_text
     assert "audio_devices" not in readiness_text
+    status = admin_client.get("/api/v1/system/status")
+    assert status.status_code == 200
+    assert status.json()["public_access"] is False
+    assert "admin_password" not in status.text
 
 
 def test_sensitive_routes_require_authentication(monkeypatch):

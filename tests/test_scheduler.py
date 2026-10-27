@@ -26,12 +26,13 @@ async def test_scheduler_claims_due_utc_and_zulu_meetings_once():
 
         now = datetime(2026, 10, 27, 17, 0, tzinfo=timezone.utc)
         assert await claim_due_meetings(db, now) == ["due-offset"]
+        assert await claim_due_meetings(db, now) == ["due-zulu"]
         assert await claim_due_meetings(db, now) == []
 
         async with db.execute("SELECT id, status FROM meetings ORDER BY id") as cur:
             assert await cur.fetchall() == [
                 ("due-offset", "joining"),
-                ("due-zulu", "pending"),
+                ("due-zulu", "joining"),
                 ("future", "pending"),
                 ("invalid", "pending"),
                 ("missed", "failed"),

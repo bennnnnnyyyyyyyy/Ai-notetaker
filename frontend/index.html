@@ -53,7 +53,7 @@
 
       <section id="view-meeting-detail" class="view"><button class="btn-back" id="back-btn">← Back to meetings</button><div id="detail-content"></div></section>
       <section id="view-campaigns" class="view"><div class="page-intro compact"><div><div class="eyebrow">ADMIN / GOVERNANCE</div><h1>Campaigns</h1><p>Qualification rules that shape every report.</p></div></div><div id="campaigns-list" class="campaign-grid"></div></section>
-      <section id="view-settings" class="view"><div class="page-intro compact"><div><div class="eyebrow">ADMIN / CONFIGURATION</div><h1>Settings</h1><p>Runtime configuration is managed locally on the worker PC.</p></div></div><div class="settings-grid"><div class="panel"><div class="eyebrow">ACCESS</div><h2>Current session</h2><p class="settings-value">Authenticated admin</p><p class="muted">Multi-user roles and permissions are planned for the next backend milestone.</p></div><div class="panel"><div class="eyebrow">DEPLOYMENT</div><h2>Hosting boundary</h2><p class="settings-value">Local worker / remote-ready UI</p><p class="muted">Do not expose this PC directly. Use an approved HTTPS tunnel or private network boundary.</p></div></div></section>
+      <section id="view-settings" class="view"><div class="page-intro compact"><div><div class="eyebrow">ADMIN / CONFIGURATION</div><h1>Settings</h1><p>Safe, read-only status for the local worker configuration.</p></div><button class="btn-secondary" id="refresh-settings">Refresh status</button></div><div id="settings-status" class="muted" aria-live="polite">Loading local configuration…</div><div id="settings-grid" class="settings-grid"></div></section>
     </main>
   </div>
   <script src="/static/app.js"></script>
