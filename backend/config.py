@@ -72,9 +72,11 @@ class Settings(BaseSettings):
     google_calendar_credentials_path: Path = PROJECT_ROOT / "credentials.json"
     google_calendar_token_path: Path = PROJECT_ROOT / "data/google_calendar_token.json"
 
-    # Read-only BD Meetings workbook import
-    bd_meetings_workbook_path: Path = Path(r"C:\Users\ben.arthur\Desktop\BD MEETINGS 2026\BD MEETINGS 2026.xlsx")
+    # Read-only BD Meetings Google Sheet source
+    bd_meetings_spreadsheet_id: str = ""
     bd_meetings_worksheet: str = "New Meetings"
+    bd_meetings_credentials_path: Path = PROJECT_ROOT / "credentials.json"
+    bd_meetings_token_path: Path = PROJECT_ROOT / "data/google_bd_sheets_token.json"
 
     # Optional paid adapters (empty = disabled)
     openai_api_key: str = ""
@@ -145,6 +147,15 @@ class Settings(BaseSettings):
                 return candidate
         discovered = sorted(PROJECT_ROOT.glob("client_secret*.json"))
         return discovered[0] if discovered else Path(self.google_calendar_credentials_path)
+
+    def resolve_bd_meetings_credentials_path(self) -> Path:
+        """Use the dedicated BD OAuth file, then the configured Sheets client."""
+        candidates = [Path(self.bd_meetings_credentials_path), Path(self.google_sheets_credentials_path)]
+        for candidate in candidates:
+            if candidate.is_file():
+                return candidate
+        discovered = sorted(PROJECT_ROOT.glob("client_secret*.json"))
+        return discovered[0] if discovered else Path(self.bd_meetings_credentials_path)
 
 
 settings = Settings()

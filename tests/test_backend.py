@@ -162,7 +162,20 @@ def test_google_sheets_ai_row_has_requested_columns():
     ]
 
 
-def test_bd_meetings_read_only_preview_and_calendar_link_is_not_importable(admin_client):
+def test_bd_meetings_read_only_preview_and_calendar_link_is_not_importable(admin_client, monkeypatch):
+    from backend.adapters import bd_meetings
+    sample = {
+        "source_row": 2,
+        "client_name": "Alex",
+        "company_name": "Example Co",
+        "campaign_label": "CGM",
+        "opener_name": "Jane",
+        "meeting_time": "2026-10-28T10:00:00+00:00",
+        "calendar_url": "https://calendar.google.com/calendar/u/0/r/eventedit/abc",
+        "meet_url": "",
+    }
+    monkeypatch.setattr(integrations, "list_bookings", lambda limit=200: [sample])
+    monkeypatch.setattr(integrations, "get_booking", lambda source_row: sample)
     status = admin_client.get("/api/v1/integrations/bd-meetings/status")
     assert status.status_code == 200
     bookings = admin_client.get("/api/v1/integrations/bd-meetings/bookings?limit=1")

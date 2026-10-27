@@ -59,7 +59,7 @@ async def _resolve_booking(source_row: int, db: aiosqlite.Connection) -> tuple[d
     booking = await _load_booking(source_row)
     if booking["meet_url"]:
         event = {
-            "calendar_id": "bd-workbook",
+            "calendar_id": "bd-google-sheet",
             "event_id": f"row-{source_row}",
             "status": "confirmed",
             "summary": booking["company_name"] or "BD Meetings booking",

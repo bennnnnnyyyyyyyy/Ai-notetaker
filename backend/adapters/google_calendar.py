@@ -1,4 +1,4 @@
-"""Read-only Google Calendar access for resolving workbook event references."""
+"""Read-only Google Calendar access for resolving shared-sheet event references."""
 
 from __future__ import annotations
 
