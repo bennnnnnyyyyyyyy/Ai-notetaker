@@ -23,10 +23,23 @@ def _cell_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _links(value: Any) -> tuple[str, str]:
+def _cell_display(cell: dict[str, Any] | None) -> str:
+    if not cell:
+        return ""
+    if cell.get("formattedValue") is not None:
+        return _cell_text(cell["formattedValue"])
+    effective = cell.get("effectiveValue") or {}
+    return _cell_text(next(iter(effective.values()), ""))
+
+
+def _cell_formula(cell: dict[str, Any] | None) -> str:
+    return _cell_text(((cell or {}).get("userEnteredValue") or {}).get("formulaValue"))
+
+
+def _links(value: Any, hyperlink: str = "", formula: str = "") -> tuple[str, str]:
     text = _cell_text(value)
-    match = _HYPERLINK_RE.search(text)
-    url = match.group(1) if match else (text if text.startswith("http") else "")
+    match = _HYPERLINK_RE.search(formula) or _HYPERLINK_RE.search(text)
+    url = hyperlink or (match.group(1) if match else (text if text.startswith("http") else ""))
     return (
         url if is_valid_meet_url(url) else "",
         url if url.startswith(_CALENDAR_PREFIX) else "",
@@ -74,10 +87,11 @@ def _load_rows() -> list[dict[str, Any]]:
 
     try:
         service = build("sheets", "v4", credentials=_credentials(), cache_discovery=False)
-        result = service.spreadsheets().values().get(
+        result = service.spreadsheets().get(
             spreadsheetId=settings.bd_meetings_spreadsheet_id,
-            range=f"{settings.bd_meetings_worksheet}!A:Z",
-            valueRenderOption="FORMULA",
+            ranges=[f"{settings.bd_meetings_worksheet}!A:Z"],
+            includeGridData=True,
+            fields="sheets(data(rowData(values(formattedValue,hyperlink,userEnteredValue,effectiveValue))))",
         ).execute()
     except HttpError as exc:
         status = getattr(exc.resp, "status", 502)
@@ -91,37 +105,47 @@ def _load_rows() -> list[dict[str, Any]]:
     except Exception as exc:
         raise BDMeetingsSetupError("The BD Google Sheet could not be read.") from exc
 
-    values = result.get("values", [])
-    if not values:
+    sheets = result.get("sheets", [])
+    row_data = ((sheets[0].get("data", [])[0]).get("rowData", []) if sheets and sheets[0].get("data") else [])
+    if not row_data:
         return []
-    headers = [_cell_text(value).lower() for value in values[0]]
+    headers = [_cell_display(cell).lower() for cell in row_data[0].get("values", [])]
     positions = {header: index for index, header in enumerate(headers) if header}
 
-    def value(row: list[Any], header: str) -> Any:
+    def cell(row: dict[str, Any], header: str) -> dict[str, Any]:
         index = positions.get(header)
-        return row[index] if index is not None and index < len(row) else None
+        cells = row.get("values", [])
+        return cells[index] if index is not None and index < len(cells) else {}
+
+    def value(row: dict[str, Any], header: str) -> str:
+        return _cell_display(cell(row, header))
 
     result_rows = []
-    for row_number, row in enumerate(values[1:], start=2):
-        company = _cell_text(value(row, "company name"))
-        contact = _cell_text(value(row, "authorized person"))
-        email = _cell_text(value(row, "email"))
+    for row_number, row in enumerate(row_data[1:], start=2):
+        company = value(row, "company name")
+        contact = value(row, "authorized person")
+        email = value(row, "email")
         if not any((company, contact, email)):
             continue
-        meeting_value = value(row, "meeting time")
-        meet_url, calendar_url = _links(meeting_value)
+        meeting_cell = cell(row, "meeting time")
+        meeting_value = _cell_display(meeting_cell)
+        meet_url, calendar_url = _links(
+            meeting_value,
+            meeting_cell.get("hyperlink", ""),
+            _cell_formula(meeting_cell),
+        )
         result_rows.append({
             "source_row": row_number,
-            "campaign_label": _cell_text(value(row, "sub")),
-            "opener_name": _cell_text(value(row, "opener")),
-            "source_status": _cell_text(value(row, "status")),
-            "date_added": _cell_text(value(row, "date added")),
+            "campaign_label": value(row, "sub"),
+            "opener_name": value(row, "opener"),
+            "source_status": value(row, "status"),
+            "date_added": value(row, "date added"),
             "company_name": company,
             "client_name": contact,
             "email": email,
             "meeting_time": _cell_text(meeting_value),
-            "opener_summary": _cell_text(value(row, "opener summary")),
-            "closer_notes": _cell_text(value(row, "closer's notes")),
+            "opener_summary": value(row, "opener summary"),
+            "closer_notes": value(row, "closer's notes"),
             "calendar_url": calendar_url,
             "meet_url": meet_url,
             "ready_to_import": bool(meet_url or calendar_url),

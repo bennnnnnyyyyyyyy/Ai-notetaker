@@ -123,6 +123,7 @@ async def get_db() -> aiosqlite.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(db_path) as conn:
         conn.row_factory = aiosqlite.Row
+        await conn.execute("PRAGMA foreign_keys=ON")
         yield conn
 
 

@@ -77,6 +77,9 @@ async def start_capture(
             status_code=409,
             detail=f"Cannot start capture from status '{meeting['status']}'",
         )
+    from backend.workers.capture import _active_captures
+    if _active_captures:
+        raise HTTPException(status_code=409, detail="Another capture is already running")
 
     # Claim the meeting before scheduling the task so repeated clicks cannot
     # start competing browser/FFmpeg workers.
@@ -123,6 +126,9 @@ async def retry_meeting(
             status_code=409,
             detail=f"Only failed meetings can be retried (current: '{meeting['status']}')",
         )
+    from backend.workers.capture import _active_captures
+    if _active_captures:
+        raise HTTPException(status_code=409, detail="Another capture is already running")
     async with db.execute(
         """
         UPDATE meetings

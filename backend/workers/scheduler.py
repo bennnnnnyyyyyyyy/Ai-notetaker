@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import aiosqlite
 
 from backend.config import settings
-from backend.workers.capture import run_capture
+from backend.workers.capture import _active_captures, run_capture
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ async def claim_due_meetings(db: aiosqlite.Connection, now: datetime | None = No
     ) as cur:
         rows = await cur.fetchall()
     due_ids = []
+    missed_ids = []
     for row in rows:
         try:
             scheduled = datetime.fromisoformat(row[1].replace("Z", "+00:00"))
@@ -43,8 +44,17 @@ async def claim_due_meetings(db: aiosqlite.Connection, now: datetime | None = No
             continue
         if scheduled.tzinfo is None:
             scheduled = scheduled.replace(tzinfo=timezone.utc)
-        if scheduled.astimezone(timezone.utc) <= current:
-            due_ids.append(row[0])
+        scheduled_utc = scheduled.astimezone(timezone.utc)
+        if scheduled_utc > current:
+            continue
+        (missed_ids if current - scheduled_utc > timedelta(minutes=20) else due_ids).append(row[0])
+    due_ids = due_ids[:1]
+    for meeting_id in missed_ids:
+        await db.execute(
+            "UPDATE meetings SET status='failed', error_message='Scheduled time passed before capture could start.' "
+            "WHERE id=? AND status='pending'",
+            (meeting_id,),
+        )
     for meeting_id in due_ids:
         await db.execute(
             """
@@ -68,8 +78,10 @@ async def run_scheduler(stop_event: asyncio.Event) -> None:
     try:
         while not stop_event.is_set():
             try:
-                async with aiosqlite.connect(settings.database_path) as db:
-                    due_ids = await claim_due_meetings(db)
+                due_ids = []
+                if not _active_captures:
+                    async with aiosqlite.connect(settings.database_path) as db:
+                        due_ids = await claim_due_meetings(db)
                 for meeting_id in due_ids:
                     logger.info("Starting scheduled capture for meeting %s", meeting_id)
                     task = asyncio.create_task(run_capture(meeting_id))

@@ -12,7 +12,7 @@ Orchestrates:
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -48,7 +48,7 @@ async def stop_capture(meeting_id: str) -> bool:
 async def _set_status(db: aiosqlite.Connection, meeting_id: str, status: str, error: str = None):
     await db.execute(
         "UPDATE meetings SET status = ?, error_message = ?, updated_at = ? WHERE id = ?",
-        (status, error, datetime.utcnow().isoformat(), meeting_id),
+        (status, error, datetime.now(timezone.utc).isoformat(), meeting_id),
     )
     await db.commit()
 
@@ -59,6 +59,7 @@ async def run_capture(meeting_id: str) -> None:
 
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA foreign_keys=ON")
 
         # Fetch meeting
         async with db.execute(

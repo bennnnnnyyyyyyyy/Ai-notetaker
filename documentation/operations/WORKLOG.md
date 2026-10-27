@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Preserve rich-text Calendar links from the shared Sheet
+
+**Objective.** Resolve the Calendar hyperlink behind a displayed meeting time such as `Tue 11:00 PM` without using the CSV copy as a source.
+
+**Actions Completed.** Updated the read-only BD Sheet adapter to use Sheets API grid metadata, including each cell's `hyperlink` and formula metadata, instead of relying only on displayed values. Column K/`Meeting Time` can therefore remain a human-readable time while its hidden Calendar event URL is passed to the existing read-only Calendar resolver. The CSV remains an inspection artifact only.
+
+**Verification.** Added a deterministic rich-text hyperlink regression test. Full `py -3 -m pytest -q` → 28 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. No live Sheet or Calendar API call was made.
+
+**Safety Status.** The shared Sheet is read-only. The adapter does not scrape Calendar pages, guess Meet URLs, write to the Sheet, or use the CSV as an alternate source.
+
 ## 2026-10-27 — Point BD source at shared Google Sheet
 
 **Objective.** Use the actual shared BD Meetings Google Sheet as the booking source instead of the local Excel copy.

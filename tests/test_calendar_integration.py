@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.adapters.bd_meetings import campaign_mapping
+from backend.adapters.bd_meetings import _links
 from backend.adapters.google_calendar import (
     CalendarEventError,
     is_valid_meet_url,
@@ -74,6 +75,15 @@ def test_meet_url_validation_accepts_only_real_https_meet_urls():
     assert not is_valid_meet_url("https://meet.google.com/")
 
 
+def test_shared_sheet_rich_text_hyperlink_is_kept_when_display_value_is_only_time():
+    meet_url, calendar_url = _links(
+        "Tue 11:00 PM",
+        "https://calendar.google.com/calendar/u/0/r/eventedit/token",
+    )
+    assert meet_url == ""
+    assert calendar_url == "https://calendar.google.com/calendar/u/0/r/eventedit/token"
+
+
 def test_calendar_event_meet_link_is_optional_and_never_guessed():
     with_link = normalize_calendar_event({"id": "1", "conferenceData": {"entryPoints": [{"entryPointType": "video", "uri": "https://meet.google.com/abc-defg-hij"}]}}, "cal")
     without_link = normalize_calendar_event({"id": "2", "htmlLink": "https://calendar.google.com/calendar/event?eid=x"}, "cal")
@@ -126,10 +136,18 @@ def test_resolve_import_confirmation_and_duplicate_protection(calendar_client, m
     )
     assert no_confirmation.status_code == 409
 
+    changed_sheet = calendar_client.post(
+        "/api/v1/integrations/bd-meetings/bookings/12/import",
+        headers=headers,
+        json={"confirm": True, "company": "Different company"},
+    )
+    assert changed_sheet.status_code == 409
+    assert "Sheet changed" in changed_sheet.json()["detail"]
+
     imported = calendar_client.post(
         "/api/v1/integrations/bd-meetings/bookings/12/import",
         headers=headers,
-        json={"confirm": True},
+        json={"confirm": True, "company": "Example Co"},
     )
     assert imported.status_code == 201
     assert imported.json()["capture_started"] is False

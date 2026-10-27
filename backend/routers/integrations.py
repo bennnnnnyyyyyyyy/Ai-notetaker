@@ -117,6 +117,8 @@ async def import_bd_booking(
     if not body.confirm:
         raise HTTPException(status_code=409, detail="Operator confirmation is required before importing this booking.")
     booking, event, mapping = await _resolve_booking(source_row, db)
+    if body.company and body.company.strip().lower() != (booking["company_name"] or "").strip().lower():
+        raise HTTPException(status_code=409, detail="Sheet changed since preview. Refresh and retry.")
 
     campaign_id = body.campaign_id if "campaign_id" in body.model_fields_set else mapping["campaign_id"]
     if campaign_id is not None:

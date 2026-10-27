@@ -1,6 +1,13 @@
 """Authorize read-only access to the shared BD Meetings Google Sheet."""
 
+import sys
 from pathlib import Path
+
+# Running ``py -3 scripts/google_bd_sheets_auth.py`` puts scripts/ on sys.path,
+# not the repository root where the backend package lives.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.config import settings
 

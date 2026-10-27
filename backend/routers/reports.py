@@ -60,6 +60,15 @@ async def analyze_meeting(
             detail=f"Cannot analyse from status '{row['status']}'",
         )
 
+    cur = await db.execute(
+        "UPDATE meetings SET status='processing', error_message=NULL, updated_at=datetime('now') "
+        "WHERE id=? AND status IN ('meeting_ended','completed','failed')",
+        (meeting_id,),
+    )
+    await db.commit()
+    if cur.rowcount != 1:
+        raise HTTPException(status_code=409, detail="Analysis already running")
+
     from backend.workers.analyse import run_analysis
     background_tasks.add_task(run_analysis, meeting_id)
     return {"detail": "Analysis started", "meeting_id": meeting_id}

@@ -12,7 +12,7 @@ import json
 import logging
 import uuid
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import aiosqlite
@@ -32,7 +32,7 @@ async def run_transcription(
     """Called by the capture worker after a successful recording."""
     await db.execute(
         "UPDATE meetings SET status = 'processing', updated_at = ? WHERE id = ?",
-        (datetime.utcnow().isoformat(), meeting_id),
+        (datetime.now(timezone.utc).isoformat(), meeting_id),
     )
     await db.commit()
 
@@ -107,7 +107,7 @@ async def run_transcription(
         await db.commit()
         await db.execute(
             "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
-            (datetime.utcnow().isoformat(), meeting_id),
+        (datetime.now(timezone.utc).isoformat(), meeting_id),
         )
         await db.commit()
 
@@ -115,6 +115,6 @@ async def run_transcription(
         logger.exception("Transcription failed for meeting %s", meeting_id)
         await db.execute(
             "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
-            (public_error_message(exc, "Transcription failed; check the server log and retry."), datetime.utcnow().isoformat(), meeting_id),
+        (public_error_message(exc, "Transcription failed; check the server log and retry."), datetime.now(timezone.utc).isoformat(), meeting_id),
         )
         await db.commit()

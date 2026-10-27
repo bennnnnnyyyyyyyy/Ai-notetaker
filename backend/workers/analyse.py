@@ -21,7 +21,7 @@ import uuid
 import asyncio
 import re
 from difflib import SequenceMatcher
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -48,6 +48,7 @@ async def run_analysis(meeting_id: str) -> None:
     db_path = str(settings.database_path)
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA foreign_keys=ON")
         await run_analysis_with_db(meeting_id, db)
 
 
@@ -59,7 +60,7 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
         await _save_report(meeting_id, report_json, campaign, db)
         await db.execute(
             "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
-            (datetime.utcnow().isoformat(), meeting_id),
+            (datetime.now(timezone.utc).isoformat(), meeting_id),
         )
         await db.commit()
         logger.info("Analysis complete for meeting %s", meeting_id)
@@ -68,7 +69,7 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
         logger.exception("Analysis failed for meeting %s", meeting_id)
         await db.execute(
             "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
-            (public_error_message(exc, "Analysis failed; check the server log and retry."), datetime.utcnow().isoformat(), meeting_id),
+            (public_error_message(exc, "Analysis failed; check the server log and retry."), datetime.now(timezone.utc).isoformat(), meeting_id),
         )
         await db.commit()
 

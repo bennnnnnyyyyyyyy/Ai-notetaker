@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import platform
 import subprocess
-from playwright.async_api import async_playwright
 from pathlib import Path
 
 from backend.config import settings
@@ -67,6 +66,7 @@ def _browser_profile_check(profile: Path | None) -> dict:
 
 async def get_readiness() -> dict:
     """Return safe, local-only checks without starting a browser or recording."""
+    from playwright.async_api import async_playwright
     ffmpeg = settings.resolve_ffmpeg_path()
     profile = Path(settings.browser_profile_path) if settings.browser_profile_path else None
     try:
