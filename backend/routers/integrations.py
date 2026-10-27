@@ -12,7 +12,7 @@ from backend.adapters.google_sheets import (
 )
 from backend.database import get_db
 from backend.auth import public_error_message
-from backend.adapters.bd_meetings import BDMeetingsSetupError, get_status as get_bd_status, list_bookings
+from backend.adapters.bd_meetings import BDMeetingsSetupError, get_status as get_bd_status, get_booking, list_bookings
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -28,6 +28,44 @@ async def bd_meetings_bookings(limit: int = 200):
         return {"bookings": await asyncio.to_thread(list_bookings, limit)}
     except BDMeetingsSetupError as exc:
         raise HTTPException(status_code=503, detail=public_error_message(exc, "BD Meetings source is not available.")) from exc
+
+
+@router.post("/bd-meetings/bookings/{source_row}/import", status_code=201)
+async def import_bd_booking(source_row: int, db: aiosqlite.Connection = Depends(get_db)):
+    try:
+        booking = await asyncio.to_thread(get_booking, source_row)
+    except BDMeetingsSetupError as exc:
+        raise HTTPException(status_code=503, detail=public_error_message(exc, "BD Meetings source is not available.")) from exc
+    if not booking:
+        raise HTTPException(status_code=404, detail="BD Meetings booking row not found")
+    if not booking["meet_url"]:
+        raise HTTPException(
+            status_code=409,
+            detail="This booking has no direct Google Meet URL. Its source cell contains a calendar event link or meeting-time text.",
+        )
+
+    campaign_map = {
+        "cgm": "cgm_patient_acquisition",
+        "roofing": "roofing_appointment_setting",
+        "ort": "dme_lead_generation",
+    }
+    label = booking["campaign_label"].lower()
+    campaign_id = next((value for key, value in campaign_map.items() if key in label), None)
+    meeting_type = "discovery"
+    await db.execute(
+        """
+        INSERT INTO meetings
+            (id, url, campaign_id, meeting_type, opener_name, scheduled_at, pre_booking_notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(__import__("uuid").uuid4()), booking["meet_url"], campaign_id, meeting_type,
+            booking["opener_name"] or None, None,
+            "BD Meetings row " + str(source_row) + ": " + (booking["opener_summary"] or booking["closer_notes"]),
+        ),
+    )
+    await db.commit()
+    return {"status": "imported", "source_row": source_row, "meeting_url": booking["meet_url"]}
 
 
 @router.get("/google-sheets/status")

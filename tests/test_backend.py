@@ -160,3 +160,19 @@ def test_google_sheets_ai_row_has_requested_columns():
         "Interested — no confirmed next meeting",
         "Prospect discussed lead quality and next steps.",
     ]
+
+
+def test_bd_meetings_read_only_preview_and_calendar_link_is_not_importable(admin_client):
+    status = admin_client.get("/api/v1/integrations/bd-meetings/status")
+    assert status.status_code == 200
+    bookings = admin_client.get("/api/v1/integrations/bd-meetings/bookings?limit=1")
+    assert bookings.status_code == 200
+    row = bookings.json()["bookings"][0]
+    assert row["calendar_url"].startswith("https://calendar.google.com/")
+    assert row["meet_url"] == ""
+    csrf = admin_client.cookies.get("ai_admin_csrf")
+    response = admin_client.post(
+        f"/api/v1/integrations/bd-meetings/bookings/{row['source_row']}/import",
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert response.status_code == 409

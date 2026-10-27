@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Add BD bookings browser and guarded import path
+
+**Objective.** Make the Desktop BD Meetings workbook useful inside Meeting Intel without modifying the source workbook or mistaking Calendar links for Meet links.
+
+**Actions Completed.** Added a read-only `BD bookings` UI view and authenticated API endpoints for workbook status, booking preview, and guarded import. The preview reads the `New Meetings` worksheet and displays source row, client, company, campaign label, opener, meeting time, Calendar event link, and import readiness. Import is rejected unless the source contains a direct HTTPS Google Meet URL; Calendar event-edit URLs remain reference-only.
+
+**Verified Result.** The configured workbook `C:\Users\ben.arthur\Desktop\BD MEETINGS 2026\BD MEETINGS 2026.xlsx` is readable with `New Meetings` as the source worksheet. Current sampled rows contain Calendar event links or plain time text, not direct Meet URLs, so no booking was imported and no source file was modified.
+
+**Verification.** `node --check frontend/app.js`; backend compile/import checks; `py -3 -m pytest -q` → 16 passed; `git diff --check` passed.
+
+**Safety Status.** Workbook access is read-only. The adapter does not copy the workbook into the repository and does not create meetings from Calendar edit links.
+
 ## 2026-10-26 — Add read-only BD Meetings workbook integration
 
 **Objective.** Use the Desktop `BD MEETINGS 2026.xlsx` booking workbook as a source for meeting candidates without changing the source file.

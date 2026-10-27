@@ -99,3 +99,7 @@ def get_status() -> dict[str, Any]:
 
 def list_bookings(limit: int = 200) -> list[dict[str, Any]]:
     return _load_rows()[: max(1, min(limit, 500))]
+
+
+def get_booking(source_row: int) -> dict[str, Any] | None:
+    return next((row for row in _load_rows() if row["source_row"] == source_row), None)
