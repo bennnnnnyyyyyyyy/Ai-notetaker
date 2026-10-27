@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Enable local scheduled capture
+
+**Objective.** Make the approved local meeting record behave like a Read AI-style assistant by opening capture at its scheduled time.
+
+**Actions Completed.** Added a FastAPI-lifespan scheduler that polls pending meetings, parses timezone-aware scheduled timestamps, atomically claims due records, and starts the existing capture worker once. Enabled it in the ignored local `.env` with a five-second poll interval. Updated the booking UI to explain that import remains operator-confirmed but scheduled capture opens the visible browser at the meeting time.
+
+**System Result.** A confirmed imported booking with a valid `scheduled_at` starts the normal visible Chrome capture worker when the local app is running. The scheduler does not grant browser permissions, bypass Google authentication, or approve Meet admission. The operator must still handle authentication, permission prompts, waiting-room admission, and recording consent. No automatic capture starts during import.
+
+**Verification.** Added an in-memory SQLite scheduler test for UTC/Zulu timestamps, future/invalid timestamps, atomic status claiming, and duplicate prevention. Full `py -3 -m pytest -q` → 27 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. No live Google API, browser, recording, or scheduled capture was run.
+
+**Safety Status.** Public access remains disabled. Scheduled capture is local-only and requires the server process to remain running. Credentials, tokens, workbook cells, historical records, and Calendar events were not modified.
+
 ## 2026-10-27 — Remove media-permission bypass and add guarded Calendar-to-Meet import
 
 **Objective.** Remove the unsafe browser media-permission flag and prepare a read-only, operator-confirmed path from BD workbook Calendar event links to genuine Google Meet URLs.

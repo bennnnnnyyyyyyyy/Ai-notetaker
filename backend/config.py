@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     admin_password_hash: str = ""
     admin_session_ttl_seconds: int = 28800
     admin_secure_cookies: bool = False
+    scheduled_capture_enabled: bool = False
+    scheduled_capture_poll_seconds: int = 5
 
     # Database
     database_path: Path = PROJECT_ROOT / "data/app.db"

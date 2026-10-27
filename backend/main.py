@@ -2,6 +2,7 @@
 FastAPI application entry point.
 """
 
+import asyncio
 import logging
 import aiosqlite
 from contextlib import asynccontextmanager
@@ -37,12 +38,19 @@ async def lifespan(app: FastAPI):
     settings.validate_security_config()
     settings.ensure_data_dirs()
     await init_db()
+    from backend.workers.scheduler import run_scheduler
+    scheduler_stop = asyncio.Event()
+    scheduler_task = asyncio.create_task(run_scheduler(scheduler_stop))
     logging.getLogger(__name__).info(
         "Prime Ad Meeting Intelligence started at http://%s:%d",
         settings.app_host,
         settings.app_port,
     )
-    yield
+    try:
+        yield
+    finally:
+        scheduler_stop.set()
+        await scheduler_task
 
 
 # ---------------------------------------------------------------------------

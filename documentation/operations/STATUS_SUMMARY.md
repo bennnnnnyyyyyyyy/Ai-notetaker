@@ -1,18 +1,23 @@
 # AI Notetaker — Current Status Summary
 
-Updated: 2026-10-26
+Updated: 2026-10-27
 
 ## Objective
 
 Build a local-first Read AI-style meeting intelligence prototype for authorized Google Meet sessions.
 
-The intended flow is:
+The intended supervised flow is:
 
 ```text
 Register meeting → open visible Meet browser → manually join/consent
 → capture both-sided audio → stop when meeting ends
 → transcribe locally → analyze against campaign rules → save report
 ```
+
+Confirmed meetings may now be scheduled locally: while the FastAPI process is
+running, the scheduler opens the visible capture browser at `scheduled_at`.
+Google authentication, browser permissions, admission, and recording consent
+remain user-controlled.
 
 The initial prototype must use the existing PC, local storage, free/local tools, and no paid APIs or hosted meeting-bot service.
 
@@ -67,6 +72,7 @@ The initial prototype must use the existing PC, local storage, free/local tools,
 - Accessible status/error regions and keyboard focus styles.
 - Responsive layout for narrow screens.
 - Local system font fallback and tokenized status colors.
+- Local scheduled-capture worker for confirmed meetings with a `scheduled_at` value.
 
 ### Verification
 
