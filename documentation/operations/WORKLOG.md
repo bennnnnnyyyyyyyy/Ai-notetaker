@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Simplify booking calendar layout
+
+**Objective.** Remove visual ambiguity caused by grid lines and overlapping event blocks in the booking calendar.
+
+**Actions Completed.** Changed the weekly booking view to seven day columns with vertically stacked event cards sorted by time. Each card now displays its own time, client, company/campaign, and opener. Removed reliance on absolute time-slot placement, so simultaneous bookings remain readable and never overlap. Mobile collapses the days into a clear vertical sequence.
+
+**System Result.** The booking schedule is scannable without interpreting grid intersections, and every event remains selectable for the existing resolve/review/import flow.
+
+**Verification.** `node --check frontend/app.js`; `git diff --check`.
+
+**Safety Status.** Frontend and documentation only. No Google API call, Calendar write, capture, recording, credential, or meeting data change was performed.
+
 ## 2026-10-27 — Replace BD booking table with weekly calendar
 
 **Objective.** Make the read-only BD booking source usable as a schedule rather than a spreadsheet-style table.
