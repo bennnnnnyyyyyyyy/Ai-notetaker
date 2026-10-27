@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS meetings (
     pre_booking_notes   TEXT,
     error_message       TEXT,
     created_at          TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    calendar_id         TEXT,
+    calendar_event_id   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS recordings (
@@ -108,6 +110,7 @@ CREATE TABLE IF NOT EXISTS audit_events (
     detail          TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
 """
 
 # ---------------------------------------------------------------------------
@@ -129,9 +132,26 @@ async def init_db() -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(db_path) as conn:
         await conn.executescript(_DDL)
+        await ensure_meeting_source_columns(conn)
         await seed_campaigns(conn)
         await recover_interrupted_meetings(conn)
         await conn.commit()
+
+
+async def ensure_meeting_source_columns(conn: aiosqlite.Connection) -> None:
+    """Migrate existing local databases without rewriting historical meetings."""
+    async with conn.execute("PRAGMA table_info(meetings)") as cur:
+        columns = {row[1] for row in await cur.fetchall()}
+    for column in ("calendar_id", "calendar_event_id"):
+        if column not in columns:
+            await conn.execute(f"ALTER TABLE meetings ADD COLUMN {column} TEXT")
+    await conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_meetings_calendar_event
+        ON meetings(calendar_id, calendar_event_id)
+        WHERE calendar_id IS NOT NULL AND calendar_event_id IS NOT NULL
+        """
+    )
 
 
 async def seed_campaigns(conn: aiosqlite.Connection) -> None:

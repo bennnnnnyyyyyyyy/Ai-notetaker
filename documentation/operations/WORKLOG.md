@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Remove media-permission bypass and add guarded Calendar-to-Meet import
+
+**Objective.** Remove the unsafe browser media-permission flag and prepare a read-only, operator-confirmed path from BD workbook Calendar event links to genuine Google Meet URLs.
+
+**Actions Completed.** Removed `--use-fake-ui-for-media-stream` from the visible Playwright launch arguments; normal browser permissions, authentication, admission, and waiting-room handling remain user-controlled. Added a read-only Google Calendar adapter using the least-privilege `calendar.readonly` OAuth scope, a separate local Calendar token path, event-reference parsing for the workbook's Google Calendar `eventedit` URLs, safe Meet-link extraction from Calendar API conference data, cancelled/inaccessible/missing-link handling, exact campaign mapping with review-required fallbacks, Calendar event identifiers on meetings, duplicate-import protection, and an explicit operator confirmation step. Import creates a pending local meeting and never starts capture. The BD workbook remains read-only.
+
+**Verification.** Added deterministic Calendar and capture-safety tests. `tests/test_calendar_integration.py` → 10 passed; full `py -3 -m pytest -q` → 26 passed; backend/scripts compilation, FastAPI import, frontend syntax, and `git diff --check` passed. Tests used mocked Calendar responses only; no Google API call, live browser, recording, or capture was run.
+
+**Safety Status.** Public access remains disabled. Calendar OAuth credentials and the separate read-only token are not configured/used by this change; the operator must run `scripts/google_calendar_auth.py` after confirming the OAuth client and consent policy. No credentials, tokens, Calendar events, workbook cells, historical reports, or meeting records were modified.
+
 ## 2026-10-27 — Add BD bookings browser and guarded import path
 
 **Objective.** Make the Desktop BD Meetings workbook useful inside Meeting Intel without modifying the source workbook or mistaking Calendar links for Meet links.

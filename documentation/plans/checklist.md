@@ -21,6 +21,6 @@ Last updated: 2026-10-26
 | Gate | Status | Evidence |
 |---|---|---|
 | 2A. Secure authenticated admin shell | 🟡 Local authentication boundary implemented; deployment/tunnel decision and remote verification remain pending | [Phase 2 plan](PHASE_2_PLAN.md) |
-| 2B. Read-only shared-calendar discovery | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
+| 2B. Read-only shared-calendar discovery | 🟡 Adapter and guarded operator import implemented; authorized Calendar event verification pending | [Phase 2 plan](PHASE_2_PLAN.md), [WORKLOG](../operations/WORKLOG.md) |
 | 2C. Controlled scheduled capture | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |
 | 2D. Evidence-linked intelligence and reviewed export | 📋 Planned | [Phase 2 plan](PHASE_2_PLAN.md) |

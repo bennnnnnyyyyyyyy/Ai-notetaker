@@ -28,6 +28,11 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 
 
+def browser_launch_args() -> list[str]:
+    """Return safe visible-browser arguments without granting media permissions."""
+    return ["--autoplay-policy=no-user-gesture-required"]
+
+
 class PlaywrightCaptureAdapter(BaseCaptureAdapter):
 
     def __init__(self):
@@ -80,10 +85,7 @@ class PlaywrightCaptureAdapter(BaseCaptureAdapter):
 
         # ── Launch browser and join meeting ───────────────────────────────
         self._playwright = await async_playwright().start()
-        launch_args: list[str] = [
-            "--use-fake-ui-for-media-stream",
-            "--autoplay-policy=no-user-gesture-required",
-        ]
+        launch_args = browser_launch_args()
 
         browser_args: dict = {
             "headless": False,

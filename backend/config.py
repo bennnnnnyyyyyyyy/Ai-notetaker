@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     google_sheets_credentials_path: Path = PROJECT_ROOT / "credentials.json"
     google_sheets_token_path: Path = PROJECT_ROOT / "data/google_sheets_token.json"
 
+    # Read-only Google Calendar OAuth uses a separate token and scope.
+    google_calendar_credentials_path: Path = PROJECT_ROOT / "credentials.json"
+    google_calendar_token_path: Path = PROJECT_ROOT / "data/google_calendar_token.json"
+
     # Read-only BD Meetings workbook import
     bd_meetings_workbook_path: Path = Path(r"C:\Users\ben.arthur\Desktop\BD MEETINGS 2026\BD MEETINGS 2026.xlsx")
     bd_meetings_worksheet: str = "New Meetings"
@@ -127,6 +131,18 @@ class Settings(BaseSettings):
             if candidate.is_file():
                 return str(candidate)
         return None
+
+    def resolve_google_calendar_credentials_path(self) -> Path:
+        """Use the configured OAuth file, then an existing Sheets/client-secret file."""
+        candidates = [
+            Path(self.google_calendar_credentials_path),
+            Path(self.google_sheets_credentials_path),
+        ]
+        for candidate in candidates[:2]:
+            if candidate.is_file():
+                return candidate
+        discovered = sorted(PROJECT_ROOT.glob("client_secret*.json"))
+        return discovered[0] if discovered else Path(self.google_calendar_credentials_path)
 
 
 settings = Settings()

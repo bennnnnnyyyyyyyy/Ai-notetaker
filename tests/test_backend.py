@@ -174,5 +174,6 @@ def test_bd_meetings_read_only_preview_and_calendar_link_is_not_importable(admin
     response = admin_client.post(
         f"/api/v1/integrations/bd-meetings/bookings/{row['source_row']}/import",
         headers={"X-CSRF-Token": csrf},
+        json={"confirm": False},
     )
     assert response.status_code == 409

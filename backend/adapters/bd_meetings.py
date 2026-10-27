@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from backend.config import settings
+from backend.adapters.google_calendar import is_valid_meet_url
 
 _HYPERLINK_RE = re.compile(r'HYPERLINK\("([^"]+)"', re.IGNORECASE)
 
@@ -31,8 +32,8 @@ def _links(value: Any) -> tuple[str, str]:
     match = _HYPERLINK_RE.search(text)
     url = match.group(1) if match else (text if text.startswith("http") else "")
     return (
-        url if "meet.google.com" in url else "",
-        url if "calendar.google.com" in url else "",
+        url if is_valid_meet_url(url) else "",
+        url if url.startswith("https://calendar.google.com/") else "",
     )
 
 
@@ -103,3 +104,15 @@ def list_bookings(limit: int = 200) -> list[dict[str, Any]]:
 
 def get_booking(source_row: int) -> dict[str, Any] | None:
     return next((row for row in _load_rows() if row["source_row"] == source_row), None)
+
+
+def campaign_mapping(label: str) -> dict[str, Any]:
+    """Map only exact, unambiguous workbook labels; unknown labels require review."""
+    normalized = " ".join((label or "").upper().replace("+", " + ").split())
+    if normalized == "CGM":
+        return {"status": "mapped", "campaign_id": "cgm_patient_acquisition"}
+    if normalized == "ROOFING":
+        return {"status": "mapped", "campaign_id": "roofing_appointment_setting"}
+    if normalized in {"ORT", "ORT + CGM"}:
+        return {"status": "mapped", "campaign_id": "dme_lead_generation"}
+    return {"status": "needs_selection", "campaign_id": None}
