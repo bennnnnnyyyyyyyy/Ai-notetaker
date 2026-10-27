@@ -54,3 +54,11 @@ button,.btn-primary,.btn-secondary,.icon-button,.btn-back,.text-button{min-heigh
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 .login-card label{display:flex;flex-direction:column;gap:7px;color:#a9b4ae;font-size:12px;margin-top:14px}
 .login-card input{width:100%}
+.nav-link{border:0;background:transparent;width:100%;text-align:left;font-family:inherit}
+.main:focus{outline:0}
+.worker-attention{color:var(--orange-dark)}
+.worker-attention i{background:var(--orange-dark)}
+.worker-ready{color:var(--green)}
+.worker-ready i{background:var(--green)}
+.btn-sm{min-height:44px;min-width:44px;padding:10px 12px}
+@media(max-width:680px){.booking-table{min-width:0}.booking-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.booking-table,.booking-table tbody,.booking-table tr,.booking-table td{display:block;width:100%}.booking-table tr{padding:14px;border-bottom:1px solid var(--line)}.booking-table td{display:grid;grid-template-columns:minmax(108px,.8fr) minmax(0,1.2fr);gap:10px;padding:7px 0;border:0}.booking-table td::before{content:attr(data-label);font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase}.booking-table td:first-child{display:none}.booking-table td:last-child{padding-top:12px}.booking-table td:last-child::before{display:none}}

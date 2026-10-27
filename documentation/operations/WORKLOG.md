@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Make the operations UI more usable
+
+**Objective.** Address the verified static UI audit findings that could mislead operators or make common dashboard tasks harder to use.
+
+**Actions Completed.** Replaced non-navigating sidebar anchors with semantic buttons; added announced page context and deliberate focus management for in-app view changes; connected the top-bar worker indicator to the authenticated readiness result rather than a hard-coded “online” claim; changed meeting search to filter the already-loaded local list rather than refetching for every keystroke; increased booking-action touch targets; and added a mobile booking-card presentation for the formerly horizontal-only table.
+
+**System Result.** The frontend communicates worker readiness accurately after its normal readiness check, supports clearer keyboard and screen-reader navigation between views, and is more usable on narrow touch screens. No capture or integration behavior changed.
+
+**Verification.** `node --check frontend/app.js`; `git diff --check`.
+
+**Safety Status.** Frontend and documentation only. No Google API call, Sheet/Calendar read, browser session, authentication change, admission action, recording, transcript, or local runtime data change was performed.
+
 ## 2026-10-27 — Rework admin queue and operator UI
 
 **Objective.** Fix the dashboard's confusing meeting ranking and make the local settings and BD booking flow clearer without changing the BD Sheet-only source boundary.

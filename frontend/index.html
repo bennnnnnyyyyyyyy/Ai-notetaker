@@ -26,19 +26,19 @@
       <button class="workspace-switcher" id="workspace-switcher" type="button"><span class="workspace-dot"></span><div><small>Workspace</small><strong id="workspace-label">Admin console</strong></div><span class="chevron">⌄</span></button>
       <nav class="nav-links" aria-label="Main navigation">
         <div class="nav-label">Operate</div>
-        <a href="#" class="nav-link active" data-view="dashboard"><span>◈</span>Overview</a>
-        <a href="#" class="nav-link" data-view="meetings"><span>◌</span>Meetings</a>
-        <a href="#" class="nav-link" data-view="new-meeting"><span>＋</span>New capture</a>
-        <a href="#" class="nav-link" data-view="bd-bookings"><span>▤</span>BD bookings</a>
+        <button class="nav-link active" data-view="dashboard" type="button" aria-current="page"><span>◈</span>Overview</button>
+        <button class="nav-link" data-view="meetings" type="button"><span>◌</span>Meetings</button>
+        <button class="nav-link" data-view="new-meeting" type="button"><span>＋</span>New capture</button>
+        <button class="nav-link" data-view="bd-bookings" type="button"><span>▤</span>BD bookings</button>
         <div class="nav-label nav-label-spaced">Manage</div>
-        <a href="#" class="nav-link admin-only" data-view="campaigns"><span>▦</span>Campaigns</a>
-        <a href="#" class="nav-link admin-only" data-view="settings"><span>⚙</span>Settings</a>
+        <button class="nav-link admin-only" data-view="campaigns" type="button"><span>▦</span>Campaigns</button>
+        <button class="nav-link admin-only" data-view="settings" type="button"><span>⚙</span>Settings</button>
       </nav>
       <div class="sidebar-bottom"><div class="privacy-note"><span>●</span><div><strong>Local-first</strong><small>Data stays on this PC</small></div></div><button class="signout" id="logout-btn" type="button">Sign out <span>↗</span></button></div>
     </aside>
 
-    <main class="main">
-      <header class="topbar"><div><span class="breadcrumb">Workspace / </span><strong id="page-context">Overview</strong></div><div class="topbar-actions"><span class="live-indicator"><i></i> Local worker online</span><div class="avatar" id="user-avatar">A</div></div></header>
+    <main class="main" id="main-content" tabindex="-1">
+      <header class="topbar"><div><span class="breadcrumb">Workspace / </span><strong id="page-context" role="status" aria-live="polite">Overview</strong></div><div class="topbar-actions"><span class="live-indicator" id="worker-indicator" role="status" aria-live="polite"><i></i><span id="worker-status">Checking worker status</span></span><div class="avatar" id="user-avatar">A</div></div></header>
 
       <section id="view-dashboard" class="view active">
         <div class="page-intro"><div><div class="eyebrow">MONDAY, 26 OCTOBER 2026</div><h1>Good evening, <em>Admin.</em></h1><p>Here’s the pulse of your meeting operation.</p></div><button class="btn-primary" data-go="bd-bookings">Review BD bookings <span>→</span></button></div>
