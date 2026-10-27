@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Add internal recording import and report contract foundations
+
+**Objective.** Implement the first two internal roadmap items: define a reusable evidence-backed report contract and allow approved local recordings to enter the existing transcription pipeline.
+
+**Actions Completed.** Added validated report finding models for topics, decisions, blockers, and unknowns, requiring transcript segment references for new evidence-backed findings. Added database source metadata for Google Meet versus local imports. Added an authenticated, CSRF-protected multipart import route with file-extension and size limits, empty-file rejection, FFmpeg normalization to 16 kHz mono WAV, local recording persistence, and worker-owned background transcription. Added an internal Import recording screen with meeting metadata and campaign selection.
+
+**System Result.** Authorized operators can import WAV, MP3, M4A, MP4, WEBM, OGG, or FLAC recordings locally; imported jobs reuse the existing transcription worker and appear as local-import meetings. The report schema can now represent evidence-linked topics, decisions, blockers, and unknowns without requiring a cloud provider.
+
+**Verification.** `py -3 -m compileall -q backend tests`; `py -3 -m pytest -q` → 32 passed; FastAPI import and route registration passed; local database schema migration passed; `node --check frontend/app.js`; `git diff --check` passed. No live recording, browser session, external model call, or Google API call was performed.
+
+**Safety Status.** Import remains authenticated and local-only. Uploads are bounded and normalized into `data/recordings/`; temporary upload files are removed. No external writes, public access, or automatic follow-up actions were added.
+
 ## 2026-10-27 — Add consistent person colors to booking calendar
 
 **Objective.** Make assigned users immediately distinguishable in the weekly booking calendar.

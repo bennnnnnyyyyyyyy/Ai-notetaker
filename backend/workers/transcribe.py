@@ -24,6 +24,14 @@ from backend.adapters.faster_whisper_transcriber import FasterWhisperTranscriber
 logger = logging.getLogger(__name__)
 
 
+async def run_import_transcription(meeting_id: str, recording_path: str) -> None:
+    """Run imported-recording transcription with a worker-owned DB connection."""
+    async with aiosqlite.connect(settings.database_path) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA foreign_keys=ON")
+        await run_transcription(meeting_id, recording_path, db)
+
+
 async def run_transcription(
     meeting_id: str,
     recording_path: str,

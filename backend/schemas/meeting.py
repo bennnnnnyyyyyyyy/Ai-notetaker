@@ -33,6 +33,8 @@ class MeetingResponse(BaseModel):
     error_message: Optional[str]
     created_at: str
     updated_at: str
+    source_type: str = "google_meet"
+    source_filename: Optional[str] = None
 
 
 class MeetingStatusResponse(BaseModel):

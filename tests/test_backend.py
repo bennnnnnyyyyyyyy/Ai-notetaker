@@ -8,6 +8,7 @@ from backend.config import settings
 from backend.auth import create_session, get_session, hash_password
 from backend.database import _DDL
 from backend.schemas.meeting import MeetingCreate
+from backend.schemas.report import Report, EvidenceFinding, Decision
 from backend.adapters.google_sheets import build_export_row
 import backend.routers.integrations as integrations
 
@@ -143,6 +144,37 @@ def test_meeting_url_requires_https_google_meet():
 
     with pytest.raises(ValidationError):
         MeetingCreate(url="https://example.com/meeting", meeting_type="discovery")
+
+
+def test_internal_report_contract_requires_evidence_for_findings():
+    finding = EvidenceFinding(description="The prospect needs better lead quality.", segment_ids=["seg_0001"])
+    assert finding.segment_ids == ["seg_0001"]
+    decision = Decision(description="A follow-up was discussed.", segment_ids=["seg_0002"], made_by="Prospect")
+    assert decision.made_by == "Prospect"
+    with pytest.raises(ValidationError):
+        EvidenceFinding(description="Unsupported claim", segment_ids=[])
+
+
+def test_import_rejects_unsupported_file_type(admin_client):
+    csrf_cookie = admin_client.cookies.get("ai_admin_csrf")
+    response = admin_client.post(
+        "/api/v1/meetings/import",
+        headers={"X-CSRF-Token": csrf_cookie},
+        files={"file": ("notes.txt", b"not audio", "text/plain")},
+        data={"meeting_type": "discovery"},
+    )
+    assert response.status_code == 415
+
+
+def test_import_rejects_empty_file(admin_client):
+    csrf_cookie = admin_client.cookies.get("ai_admin_csrf")
+    response = admin_client.post(
+        "/api/v1/meetings/import",
+        headers={"X-CSRF-Token": csrf_cookie},
+        files={"file": ("empty.wav", b"", "audio/wav")},
+        data={"meeting_type": "discovery"},
+    )
+    assert response.status_code == 422
 
 
 def test_campaign_creation_rejects_paths_outside_bundle(admin_client):

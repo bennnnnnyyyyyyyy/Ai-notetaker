@@ -1,13 +1,56 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+import asyncio
+import subprocess
+import wave
+from datetime import datetime, timezone
+from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 import aiosqlite
 import json
 
 from backend.database import get_db
 from backend.schemas.meeting import MeetingCreate, MeetingResponse, MeetingStatusResponse
+from backend.config import settings
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
+_IMPORT_EXTENSIONS = {".wav", ".mp3", ".m4a", ".mp4", ".webm", ".ogg", ".flac"}
+
+
+async def _save_import(upload: UploadFile, path: Path) -> int:
+    size = 0
+    with path.open("wb") as destination:
+        while chunk := await upload.read(1024 * 1024):
+            size += len(chunk)
+            if size > settings.import_max_bytes:
+                path.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="Imported recording is too large.")
+            destination.write(chunk)
+    if size == 0:
+        path.unlink(missing_ok=True)
+        raise HTTPException(status_code=422, detail="Imported recording is empty.")
+    return size
+
+
+def _normalize_import(source: Path, destination: Path) -> float:
+    ffmpeg = settings.resolve_ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required to import and normalize recordings.")
+    completed = subprocess.run(
+        [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(source),
+         "-vn", "-ac", "1", "-ar", "16000", "-sample_fmt", "s16", str(destination)],
+        capture_output=True, text=True, timeout=180, check=False,
+    )
+    if completed.returncode != 0 or not destination.is_file():
+        raise RuntimeError("The imported recording could not be decoded.")
+    try:
+        with wave.open(str(destination), "rb") as audio:
+            duration = audio.getnframes() / float(audio.getframerate() or 1)
+            if audio.getnchannels() != 1 or audio.getframerate() != 16000 or duration <= 0:
+                raise RuntimeError("The normalized recording is invalid.")
+            return duration
+    except (wave.Error, EOFError) as exc:
+        raise RuntimeError("The normalized recording is invalid.") from exc
 
 
 @router.post("", response_model=MeetingResponse, status_code=201)
@@ -35,6 +78,64 @@ async def create_meeting(
         ),
     )
     await db.commit()
+    return await _get_meeting_or_404(meeting_id, db)
+
+
+@router.post("/import", response_model=MeetingResponse, status_code=202)
+async def import_meeting(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    meeting_type: str = Form("discovery"),
+    campaign_id: str | None = Form(None),
+    opener_name: str | None = Form(None),
+    closer_name: str | None = Form(None),
+    pre_booking_notes: str | None = Form(None),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Import a local recording and run the existing transcription worker."""
+    if meeting_type not in {"discovery", "negotiation", "onboarding"}:
+        raise HTTPException(status_code=422, detail="Invalid meeting type.")
+    filename = Path(file.filename or "").name
+    suffix = Path(filename).suffix.lower()
+    if suffix not in _IMPORT_EXTENSIONS:
+        raise HTTPException(status_code=415, detail="Use WAV, MP3, M4A, MP4, WEBM, OGG, or FLAC.")
+    from backend.workers.capture import _active_captures
+    if _active_captures:
+        raise HTTPException(status_code=409, detail="Import is unavailable while capture is active.")
+
+    meeting_id = str(uuid.uuid4())
+    settings.ensure_data_dirs()
+    upload_path = settings.recordings_dir / f".{meeting_id}.upload{suffix}"
+    recording_path = settings.recordings_dir / f"{meeting_id}.wav"
+    try:
+        await _save_import(file, upload_path)
+        duration = await asyncio.to_thread(_normalize_import, upload_path, recording_path)
+    except HTTPException:
+        raise
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        recording_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    finally:
+        upload_path.unlink(missing_ok=True)
+        await file.close()
+
+    await db.execute(
+        """
+        INSERT INTO meetings
+            (id, url, campaign_id, meeting_type, opener_name, closer_name,
+             status, pre_booking_notes, updated_at, source_type, source_filename)
+        VALUES (?, ?, ?, ?, ?, ?, 'processing', ?, ?, 'local_import', ?)
+        """,
+        (meeting_id, f"local://{meeting_id}", campaign_id, meeting_type, opener_name,
+         closer_name, pre_booking_notes, datetime.now(timezone.utc).isoformat(), filename),
+    )
+    await db.execute(
+        "INSERT INTO recordings (id, meeting_id, file_path, duration_seconds) VALUES (?, ?, ?, ?)",
+        (str(uuid.uuid4()), meeting_id, str(recording_path), duration),
+    )
+    await db.commit()
+    from backend.workers.transcribe import run_import_transcription
+    background_tasks.add_task(run_import_transcription, meeting_id, str(recording_path))
     return await _get_meeting_or_404(meeting_id, db)
 
 

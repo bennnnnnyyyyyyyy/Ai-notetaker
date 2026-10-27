@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     transcripts_dir: Path = PROJECT_ROOT / "data/transcripts"
     reports_dir: Path = PROJECT_ROOT / "data/reports"
     logs_dir: Path = PROJECT_ROOT / "data/logs"
+    import_max_bytes: int = 500 * 1024 * 1024
 
     # Browser
     browser_profile_path: str = ""

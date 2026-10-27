@@ -1,6 +1,6 @@
 import json
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal
 
 
@@ -114,9 +114,28 @@ class ProspectProfile(BaseModel):
     company: Optional[str] = None
     role: Optional[str] = None
     business_description: Optional[str] = None
-    stated_needs: list[str] = []
+    stated_needs: list[str] = Field(default_factory=list)
     decision_authority: Optional[str] = None
     evidence_type: EvidenceType = "Prospect statement"
+
+
+class EvidenceFinding(BaseModel):
+    """A report finding that can be traced to one or more transcript segments."""
+    description: str
+    segment_ids: list[str] = Field(min_length=1)
+
+
+class Decision(EvidenceFinding):
+    made_by: Optional[str] = None
+
+
+class Blocker(EvidenceFinding):
+    owner: Optional[str] = None
+
+
+class UnknownFinding(BaseModel):
+    description: str
+    reason: str
 
 
 # ── Top-level report ──────────────────────────────────────────────────────────
@@ -137,7 +156,7 @@ class Report(BaseModel):
 
     # Stage 3 – qualification
     qualification_status: QualificationStatus
-    qualification_criteria: list[QualificationCriterion] = []
+    qualification_criteria: list[QualificationCriterion] = Field(default_factory=list)
 
     # Stage 4 – opener
     opener_performance: OpenerScorecard
@@ -150,9 +169,13 @@ class Report(BaseModel):
     pipeline_stage: Optional[str] = None
 
     # Supporting fields
-    objections: list[Objection] = []
-    commercial_terms: list[CommercialTerm] = []
-    agreed_actions: list[Action] = []
+    objections: list[Objection] = Field(default_factory=list)
+    commercial_terms: list[CommercialTerm] = Field(default_factory=list)
+    agreed_actions: list[Action] = Field(default_factory=list)
+    topics: list[EvidenceFinding] = Field(default_factory=list)
+    decisions: list[Decision] = Field(default_factory=list)
+    blockers: list[Blocker] = Field(default_factory=list)
+    unknowns: list[UnknownFinding] = Field(default_factory=list)
     management_observations: Optional[str] = None
     crm_ready_notes: Optional[str] = None
 

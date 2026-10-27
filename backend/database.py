@@ -38,8 +38,10 @@ CREATE TABLE IF NOT EXISTS meetings (
     error_message       TEXT,
     created_at          TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
-    calendar_id         TEXT,
-    calendar_event_id   TEXT
+        calendar_id         TEXT,
+        calendar_event_id   TEXT,
+        source_type         TEXT NOT NULL DEFAULT 'google_meet',
+        source_filename     TEXT
 );
 
 CREATE TABLE IF NOT EXISTS recordings (
@@ -143,9 +145,10 @@ async def ensure_meeting_source_columns(conn: aiosqlite.Connection) -> None:
     """Migrate existing local databases without rewriting historical meetings."""
     async with conn.execute("PRAGMA table_info(meetings)") as cur:
         columns = {row[1] for row in await cur.fetchall()}
-    for column in ("calendar_id", "calendar_event_id"):
+    for column in ("calendar_id", "calendar_event_id", "source_type", "source_filename"):
         if column not in columns:
-            await conn.execute(f"ALTER TABLE meetings ADD COLUMN {column} TEXT")
+            definition = "TEXT NOT NULL DEFAULT 'google_meet'" if column == "source_type" else "TEXT"
+            await conn.execute(f"ALTER TABLE meetings ADD COLUMN {column} {definition}")
     await conn.execute(
         """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_meetings_calendar_event
