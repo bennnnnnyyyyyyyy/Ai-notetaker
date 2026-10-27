@@ -1,5 +1,15 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Rework admin queue and operator UI
+
+**Objective.** Fix the dashboard's confusing meeting ranking and make the local settings and BD booking flow clearer without changing the BD Sheet-only source boundary.
+
+**Actions Completed.** Copied the missing prospector skill library into the Ai-notetaker `.agents/skills` directory while preserving existing project-local skills. Applied the audit and UI guidance to the static frontend: grouped meetings into Active now, Upcoming, and History; displayed scheduled time instead of creation time when available; made BD bookings the primary dashboard action; labeled manual capture as a fallback; clarified that Settings is read-only; replaced browser alerts with an in-page toast; improved touch targets, login-field layout, empty states, detail metadata, reduced-motion handling, and CSS token usage; removed remaining UI inline styling from the affected booking/detail surfaces.
+
+**Verification.** `node --check frontend/app.js`; `py -3 -m pytest -q` → 29 passed; backend/scripts compilation; FastAPI import; `git diff --check`; local Playwright smoke check of the unauthenticated page and login layout. No Google API call, Sheet read, Calendar read, browser capture, or recording was performed.
+
+**Safety Status.** The shared BD Sheet remains the only booking source. No backend capture, authentication, admission, permission, scheduling, Calendar, workbook, credentials, or meeting data behavior was changed.
+
 ## 2026-10-27 — Repair admin meeting ordering and Settings status
 
 **Objective.** Make the admin page reflect operational priority and replace the non-functional Settings placeholder with real local status information.

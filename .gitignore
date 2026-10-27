@@ -36,3 +36,4 @@ credentials.json
 client_secret*.json
 token.json
 data/google_sheets_token.json
+.agents
