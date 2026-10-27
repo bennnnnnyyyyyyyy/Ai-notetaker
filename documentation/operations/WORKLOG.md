@@ -1,5 +1,17 @@
 # AI Notetaker Worklog
 
+## 2026-10-27 — Add consistent person colors to booking calendar
+
+**Objective.** Make assigned users immediately distinguishable in the weekly booking calendar.
+
+**Actions Completed.** Added a deterministic name hash that assigns each opener to one of eight accessible color styles. Every booking now displays the assigned user as a colored pill; the same name receives the same color across the entire calendar, while the name remains visible for users who cannot rely on color alone.
+
+**System Result.** Operators can scan ownership quickly while retaining the client, company, time, and review action on each booking.
+
+**Verification.** `node --check frontend/app.js`; `git diff --check`.
+
+**Safety Status.** Frontend and documentation only. No Google API call, Calendar write, capture, recording, credential, or meeting data change was performed.
+
 ## 2026-10-27 — Simplify booking calendar layout
 
 **Objective.** Remove visual ambiguity caused by grid lines and overlapping event blocks in the booking calendar.
