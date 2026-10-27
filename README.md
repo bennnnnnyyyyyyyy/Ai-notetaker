@@ -53,6 +53,7 @@ backend/adapters/bd_meetings.py       backend/adapters/google_calendar.py
 ### Where each piece of data comes from
 
 - **Booking information** comes from the shared Google Sheet `1uicpBruuFeno2ES4hNw-TIAwNkGEI37gw8Z-A4yMpC8`, worksheet `New Meetings`, through the Google Sheets API with `spreadsheets.readonly`. The sheet is shared to `meetings.dmedeskai@gmail.com`; the adapter reads rows only and never writes back.
+- **The `.clasp.json` in `BD MEETINGS 2026` belongs to the Sheet's separate Apps Script project.** It is not used as a data bridge by this Python app; the app reads the Sheet directly through the Google Sheets API.
 - **Calendar event identity** comes from the Google Calendar event/edit URL stored in a workbook row. The app decodes the event reference to obtain the Calendar ID and event ID. It does not scrape the Calendar web page.
 - **Meeting time and Meet URL** come from the authorized Google Calendar API response. The app accepts only a genuine HTTPS `https://meet.google.com/...` video entry point or `hangoutLink`; it does not guess a URL from an event URL.
 - **Campaign mapping** comes from the workbook label and existing local campaigns: `CGM`, `Roofing`, `ORT`, and `ORT+CGM` have explicit mappings. Unknown or ambiguous labels require operator selection.

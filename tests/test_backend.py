@@ -9,6 +9,7 @@ from backend.auth import create_session, get_session, hash_password
 from backend.database import _DDL
 from backend.schemas.meeting import MeetingCreate
 from backend.adapters.google_sheets import build_export_row
+import backend.routers.integrations as integrations
 
 
 @pytest.fixture
@@ -163,7 +164,6 @@ def test_google_sheets_ai_row_has_requested_columns():
 
 
 def test_bd_meetings_read_only_preview_and_calendar_link_is_not_importable(admin_client, monkeypatch):
-    from backend.adapters import bd_meetings
     sample = {
         "source_row": 2,
         "client_name": "Alex",
