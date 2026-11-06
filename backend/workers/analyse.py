@@ -37,6 +37,17 @@ from backend.schemas.report import Report
 
 logger = logging.getLogger(__name__)
 
+# Below this many transcript words a report would be mostly invented, so refuse.
+MIN_TRANSCRIPT_WORDS = 50
+
+
+class InsufficientTranscriptError(ValueError):
+    """Raised when a transcript is too short to support an evidence-based report."""
+
+
+def _transcript_word_count(transcript: dict) -> int:
+    return sum(len((seg.get("text") or "").split()) for seg in transcript.get("segments") or [])
+
 
 # ---------------------------------------------------------------------------
 # Public entry points
@@ -56,6 +67,12 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
     """Called internally after transcription completes."""
     try:
         meeting, transcript, campaign = await _load_inputs(meeting_id, db)
+        words = _transcript_word_count(transcript)
+        if words < MIN_TRANSCRIPT_WORDS:
+            raise InsufficientTranscriptError(
+                f"Transcript has only {words} words (minimum {MIN_TRANSCRIPT_WORDS}); "
+                "no report was generated. Check the recording's audio."
+            )
         report_json = await _run_pipeline(meeting, transcript, campaign)
         await _save_report(meeting_id, report_json, campaign, db)
         await db.execute(
@@ -69,7 +86,12 @@ async def run_analysis_with_db(meeting_id: str, db: aiosqlite.Connection) -> Non
         logger.exception("Analysis failed for meeting %s", meeting_id)
         await db.execute(
             "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
-            (public_error_message(exc, "Analysis failed; check the server log and retry."), datetime.now(timezone.utc).isoformat(), meeting_id),
+            (
+                str(exc) if isinstance(exc, InsufficientTranscriptError)
+                else public_error_message(exc, "Analysis failed; check the server log and retry."),
+                datetime.now(timezone.utc).isoformat(),
+                meeting_id,
+            ),
         )
         await db.commit()
 
@@ -166,6 +188,16 @@ async def _run_pipeline(meeting: dict, transcript: dict, campaign: dict) -> dict
 
     # Pydantic validation
     Report.model_validate(report_dict)
+
+    # Provenance: record which service produced the report and whether the
+    # transcript left this computer. Stored in the report file only.
+    model_by_provider = {"gemini": settings.gemini_model, "openrouter": settings.openrouter_model}
+    report_dict["generated_by"] = {
+        "provider": provider if provider in model_by_provider else "ollama",
+        "model": model_by_provider.get(provider, settings.ollama_model),
+        "external_service": provider in model_by_provider,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
     return report_dict
 
 

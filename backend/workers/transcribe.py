@@ -23,6 +23,11 @@ from backend.adapters.faster_whisper_transcriber import FasterWhisperTranscriber
 
 logger = logging.getLogger(__name__)
 
+NO_SPEECH_MESSAGE = (
+    "No speech was detected in the recording. Check that meeting audio is routed "
+    "to the configured VB-Audio device."
+)
+
 
 async def run_import_transcription(meeting_id: str, recording_path: str) -> None:
     """Run imported-recording transcription with a worker-owned DB connection."""
@@ -113,10 +118,19 @@ async def run_transcription(
                 ),
             )
         await db.commit()
-        await db.execute(
-            "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
-        (datetime.now(timezone.utc).isoformat(), meeting_id),
-        )
+        if not any((seg.get("text") or "").strip() for seg in transcript_doc["segments"]):
+            # The recording exists but Whisper heard nothing: almost always an
+            # audio-routing problem, so do not present it as a completed meeting.
+            logger.warning("No speech detected in recording for meeting %s", meeting_id)
+            await db.execute(
+                "UPDATE meetings SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ?",
+                (NO_SPEECH_MESSAGE, datetime.now(timezone.utc).isoformat(), meeting_id),
+            )
+        else:
+            await db.execute(
+                "UPDATE meetings SET status = 'completed', error_message = NULL, updated_at = ? WHERE id = ?",
+                (datetime.now(timezone.utc).isoformat(), meeting_id),
+            )
         await db.commit()
 
     except Exception as exc:

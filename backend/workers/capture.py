@@ -21,6 +21,7 @@ import aiosqlite
 from backend.config import settings
 from backend.auth import public_error_message
 from backend.adapters.playwright_capture import PlaywrightCaptureAdapter
+from backend.audio_watchdog import SILENCE_MESSAGE, SilenceWatchdog, tail_level_db
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,12 @@ logger = logging.getLogger(__name__)
 MAX_DURATION = 7200
 # Polling interval while waiting for the meeting to end
 POLL_INTERVAL = 2
+# How often (seconds) the recording's loudness is checked, and how long it must
+# stay silent after admission before the operator is warned.
+WATCHDOG_INTERVAL = 10
+# Seconds of the most recent audio inspected on each check
+WATCHDOG_WINDOW = 10
+SILENCE_WARN_SECONDS = 60
 
 _active_captures: dict[str, PlaywrightCaptureAdapter] = {}
 
@@ -49,6 +56,15 @@ async def _set_status(db: aiosqlite.Connection, meeting_id: str, status: str, er
     await db.execute(
         "UPDATE meetings SET status = ?, error_message = ?, updated_at = ? WHERE id = ?",
         (status, error, datetime.now(timezone.utc).isoformat(), meeting_id),
+    )
+    await db.commit()
+
+
+async def _set_warning(db: aiosqlite.Connection, meeting_id: str, message: Optional[str]):
+    """Show or clear a live warning without changing the meeting's status."""
+    await db.execute(
+        "UPDATE meetings SET error_message = ?, updated_at = ? WHERE id = ?",
+        (message, datetime.now(timezone.utc).isoformat(), meeting_id),
     )
     await db.commit()
 
@@ -79,6 +95,8 @@ async def run_capture(meeting_id: str) -> None:
             recording_path = await adapter.start(meeting_url, meeting_id)
             logger.info("Recording to %s", recording_path)
             current_status = "joining"
+            watchdog = SilenceWatchdog(warn_after_seconds=SILENCE_WARN_SECONDS)
+            last_level_check = -WATCHDOG_INTERVAL
             # Wait for meeting end or timeout
             elapsed = 0
             while elapsed < MAX_DURATION:
@@ -90,6 +108,17 @@ async def run_capture(meeting_id: str) -> None:
                     await _set_status(db, meeting_id, status)
                 if status in ("meeting_ended", "failed"):
                     break
+
+                # Warn the operator while the call is still running if only silence is arriving.
+                if status == "recording" and elapsed - last_level_check >= WATCHDOG_INTERVAL:
+                    last_level_check = elapsed
+                    level = await asyncio.to_thread(tail_level_db, Path(recording_path), WATCHDOG_WINDOW)
+                    verdict = watchdog.update(level)
+                    if verdict == "warn":
+                        logger.warning("Meeting %s: recording has been silent; warning operator", meeting_id)
+                        await _set_warning(db, meeting_id, SILENCE_MESSAGE.format(minutes=watchdog.silent_minutes()))
+                    elif verdict == "clear":
+                        await _set_warning(db, meeting_id, None)
 
             duration = await adapter.stop()
             logger.info("Recording stopped. Duration: %.1f s", duration)

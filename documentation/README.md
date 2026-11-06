@@ -28,4 +28,5 @@ This is the canonical documentation index. Keep the code folders focused on code
 - [Initial review](reviews/INITIAL_REVIEW.md)
 - [Phase 1 completion record](operations/PHASE_1_COMPLETE.md)
 - [Phase 2 plan](plans/PHASE_2_PLAN.md)
+- [Reliability plan](plans/RELIABILITY_PLAN.md) — capture reliability on this PC (from the [2026-11-06 PC and pipeline audit](reviews/PC_AND_PIPELINE_AUDIT_2026-11-06.md))
 - [Reddit research-derived app plan](plans/REDDIT_DUMP_APP_PLAN.md)

@@ -1,5 +1,29 @@
 # AI Notetaker Worklog
 
+## 2026-11-06 — Add live silence warning during capture (Reliability Plan A1)
+
+**Objective.** Tell the operator while a call is still running if only silence is being recorded, instead of discovering it from an empty transcript afterwards.
+
+**Actions Completed.** Added `backend/audio_watchdog.py`, which reads the last 10 seconds of the growing WAV (ignoring FFmpeg's streaming header) and measures its level. The capture worker checks every 10 seconds once the meeting status is `recording` (after admission). If the level stays below −65 dB for 60 seconds it sets a warning on the meeting through the existing `error_message` field (no database change); the warning clears itself when sound returns and is removed when the meeting ends. The dashboard's detail view now reloads when the message changes, not only when the status changes. Recording is never stopped by the warning. Added `tests/test_audio_watchdog.py` (8 tests).
+
+**System Result.** Replaying the three real recordings through the detector offline: the all-silent 8-minute recording (`b05ec058`) would have warned at 1:20; the intermittently silent 19-minute recording (`787f636e`) would have warned at 4:10; the good 21-minute recording (`1bd6a8ba`) gave one false warning at 1:20 (a quiet opening) that cleared 20 seconds later. No sound alert is played yet; the warning is visual only.
+
+**Verification.** `py -3 -m compileall -q backend tests`; FastAPI import OK; `node --check frontend/app.js`; `py -3 -m pytest -q` → 55 passed. The detector was run read-only over existing recordings. No browser, live meeting, recording, or external service was used.
+
+**Safety Status.** Code, tests and docs only. Existing data, `.env` and recordings were not modified.
+
+## 2026-11-06 — Fix gaps found in the management-email fact check
+
+**Objective.** Close code-level gaps found while verifying the management email: weak Meet link validation, silent recordings shown as completed, reports generated from near-empty transcripts, no record of which AI service wrote a report, and no test for the capture worker.
+
+**Actions Completed.** Added a shared `is_valid_meet_url` in `backend/schemas/meeting.py` that requires `https://meet.google.com/<abc-defg-hij>` (query string allowed); the manual dashboard form and the BD/Calendar import now use the same rule, and `meet.googleusercontent.com` is no longer accepted. The transcription worker now marks a meeting `failed` with an audio-routing message when Whisper returns no speech (the empty transcript is still saved). The analysis worker refuses transcripts under 50 words before any model call and shows the reason in the meeting's error message. New reports carry a `generated_by` block (provider, model, whether an external service was used, timestamp) in the report file. Added `tests/test_safeguards.py` covering all of the above plus the capture worker's normal and empty-recording paths using a fake adapter.
+
+**System Result.** Links such as `https://meet.google.com/` or `https://meet.google.com/not-a-code` are rejected. Captures with no audible speech no longer appear as completed, and no report can be produced from a few words of transcript. Existing database rows, recordings, transcripts and reports were not changed.
+
+**Verification.** `py -3 -m compileall -q backend tests`; FastAPI import OK; `py -3 -m pytest -q` → 47 passed. No browser, recording, meeting, Google API or AI provider call was made.
+
+**Safety Status.** Code and tests only. `.env` was not edited; it still selects `LLM_PROVIDER=openrouter`, so transcripts analysed now are sent to an external service. That choice is left to the owner.
+
 ## 2026-10-27 — Add internal recording import and report contract foundations
 
 **Objective.** Implement the first two internal roadmap items: define a reusable evidence-backed report contract and allow approved local recordings to enter the existing transcription pipeline.

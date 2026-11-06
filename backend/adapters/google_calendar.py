@@ -9,6 +9,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from backend.config import settings
+from backend.schemas.meeting import is_valid_meet_url  # noqa: F401  (shared Meet link rule)
 
 CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 
@@ -22,10 +23,6 @@ class CalendarEventError(RuntimeError):
         super().__init__(message)
         self.status_code = status_code
 
-
-def is_valid_meet_url(value: str | None) -> bool:
-    parsed = urlsplit(value or "")
-    return parsed.scheme == "https" and parsed.hostname == "meet.google.com" and bool(parsed.path.strip("/"))
 
 
 def _decode_event_reference(token: str) -> tuple[str, str]:
